@@ -8,21 +8,48 @@ import json
 import os
 
 
+# Initialize the API client
 client = Api(client_id="PAR_alfredrestauration_487210a282c499a6c091cb90c60c863126cf9ad19ee41d15991f6855364f66f2", 
              client_secret="96a3abc286012daf4b5ce3c7ff44fcec45d1eff0e135df1b2260d89f08c3ae57")
 
-
+# Define the date range
 start_dt = datetime.datetime(2024, 1, 1, 12, 30)
 end_dt = datetime.datetime.today()
 
-params = {
+# Base parameters for the API request
+params_template = {
     "motsCles": "restauration",
     'minCreationDate': dt_to_str_iso(start_dt),
-    'maxCreationDate': dt_to_str_iso(end_dt)
+    'maxCreationDate': dt_to_str_iso(end_dt),
 }
-search_on_big_data = client.search(params=params)
 
-df = pd.json_normalize(search_on_big_data["resultats"])
+# Define the ranges for pagination
+ranges = [
+    (0, 149), (150, 299), (300, 449), (450, 599),
+    (600, 749), (750, 899), (900, 1049), (1050, 1149)
+]
+
+# Initialize a list to store dataframes
+dataframes = []
+
+for start, end in ranges:
+    # Update the range parameter for the current batch
+    params = params_template.copy()
+    params['range'] = f"{start}-{end}"
+    print(f"Fetching job listings from {start} to {end}...")
+
+    # Perform the API request
+    search_on_big_data = client.search(params=params)
+    df = pd.json_normalize(search_on_big_data["resultats"])
+
+    # Append the results to the list
+    dataframes.append(df)
+
+# Combine all dataframes into a single dataframe
+combined_df = pd.concat(dataframes, ignore_index=True)
+
+# Debug: Print the total number of rows
+print(f"Total job listings fetched: {combined_df.shape[0]}")
 
 # Google Sheets API setup
 scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
@@ -40,7 +67,7 @@ worksheet = spreadsheet.sheet1
 existing_data = pd.DataFrame(worksheet.get_all_records())
 
 # Convert scraped results into a DataFrame
-new_data = df
+new_data = combined_df
 
 # Combine and remove duplicates
 if not existing_data.empty:
