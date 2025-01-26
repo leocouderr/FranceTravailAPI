@@ -14,13 +14,11 @@ client = Api(client_id="PAR_alfredrestauration_487210a282c499a6c091cb90c60c86312
 
 start_dt = datetime.datetime(2024, 1, 1, 12, 30)
 end_dt = datetime.datetime.today()
-#end_dt = datetime.datetime(2024, 1, 2, 12, 30)
 
 params = {
     "motsCles": "restauration",
     'minCreationDate': dt_to_str_iso(start_dt),
     'maxCreationDate': dt_to_str_iso(end_dt)
-
 }
 search_on_big_data = client.search(params=params)
 
@@ -55,6 +53,16 @@ else:
 # Debug: Print the number of rows to append
 rows_to_append = combined_data.shape[0]
 print(f"Rows to append: {rows_to_append}")
+
+# Handle NaN, infinity values before sending to Google Sheets
+# Replace NaN values with 0 or another placeholder (you can customize this)
+combined_data = combined_data.fillna(0)
+
+# Replace infinite values with 0 or another placeholder
+combined_data.replace([float('inf'), float('-inf')], 0, inplace=True)
+
+# Optional: Ensure all float types are valid (e.g., replace any invalid float with 0)
+combined_data = combined_data.applymap(lambda x: 0 if isinstance(x, float) and (x == float('inf') or x == float('-inf') or x != x) else x)
 
 # Update Google Sheets with the combined data
 worksheet.clear()  # Clear existing content
