@@ -4,6 +4,8 @@ import datetime
 import gspread
 from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
+import json
+
 
 client = Api(client_id="PAR_alfredrestauration_487210a282c499a6c091cb90c60c863126cf9ad19ee41d15991f6855364f66f2", 
              client_secret="96a3abc286012daf4b5ce3c7ff44fcec45d1eff0e135df1b2260d89f08c3ae57")
