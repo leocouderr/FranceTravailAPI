@@ -64,6 +64,15 @@ combined_data.replace([float('inf'), float('-inf')], 0, inplace=True)
 # Optional: Ensure all float types are valid (e.g., replace any invalid float with 0)
 combined_data = combined_data.applymap(lambda x: 0 if isinstance(x, float) and (x == float('inf') or x == float('-inf') or x != x) else x)
 
+# Optional: Ensuring no invalid values (like lists or dicts) in any column
+def clean_value(value):
+    if isinstance(value, (list, dict)):
+        return str(value)  # Convert lists or dicts to string
+    return value
+
+combined_data = combined_data.applymap(clean_value)
+
+
 # Update Google Sheets with the combined data
 worksheet.clear()  # Clear existing content
 worksheet.update([combined_data.columns.tolist()] + combined_data.values.tolist())
