@@ -3,7 +3,7 @@ name: Run Main.py Every 30 Minutes
 on:
   schedule:
     # Run every 30 minutes
-    - cron: "*/30 * * * *"
+    - cron: "0 * * * *"
   workflow_dispatch: # Allows manual trigger from the GitHub UI
 
 jobs:
