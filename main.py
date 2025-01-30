@@ -99,6 +99,11 @@ def clean_value(value):
 
 combined_data = combined_data.applymap(clean_value)
 
+#Remove rows with Mesure POEI and Consultant as Intitulé
+combined_data = combined_data[
+    ~combined_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", na=False)
+]
+
 
 # Update Google Sheets with the combined data
 worksheet.clear()  # Clear existing content
