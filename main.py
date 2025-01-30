@@ -111,7 +111,7 @@ combined_data["lieuTravail.codePostal"] = combined_data["lieuTravail.codePostal"
 combined_data["lieuTravail.codePostal"] = combined_data["lieuTravail.codePostal"].str.zfill(5)
 
 # Remove numbers and hyphens from 'lieuTravail.libelle'
-combined_data["Cleaned_Libelle"] = combined_data["lieuTravail.libelle"].str.replace(r"[\d-]", "", regex=True).str.strip()
+combined_data["Cleaned_Libelle"] = combined_data["lieuTravail.libelle"].str.replace(r"^\d+\s*-\s*", "", regex=True).str.strip()
 
 # Create 'Localisation' column
 combined_data["Localisation"] = combined_data["lieuTravail.codePostal"] + ", " + combined_data["Cleaned_Libelle"] + ", France"
