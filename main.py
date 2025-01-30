@@ -114,7 +114,7 @@ combined_data["lieuTravail.codePostal"] = combined_data["lieuTravail.codePostal"
 combined_data["Cleaned_Libelle"] = combined_data["lieuTravail.libelle"].str.replace(r"^\d+\s*-\s*", "", regex=True).str.strip()
 
 # Create 'Localisation' column
-combined_data["Localisation"] = combined_data["lieuTravail.codePostal"] + ", " + combined_data["Cleaned_Libelle"] + ", France"
+combined_data["Localisation"] = (combined_data["lieuTravail.codePostal"] + ", " + combined_data["Cleaned_Libelle"] + ", France").str.upper()
 
 # Drop the intermediate column if not needed
 combined_data.drop(columns=["Cleaned_Libelle"], inplace=True)
