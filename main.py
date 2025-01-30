@@ -104,6 +104,20 @@ combined_data = combined_data[
     ~combined_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", na=False)
 ]
 
+# Ensure 'lieuTravail.codePostal' is a string
+combined_data["lieuTravail.codePostal"] = combined_data["lieuTravail.codePostal"].astype(str)
+
+# Add leading zeros if the postal code has less than 5 characters
+combined_data["lieuTravail.codePostal"] = combined_data["lieuTravail.codePostal"].str.zfill(5)
+
+# Remove numbers and hyphens from 'lieuTravail.libelle'
+combined_data["Cleaned_Libelle"] = combined_data["lieuTravail.libelle"].str.replace(r"[\d-]", "", regex=True).str.strip()
+
+# Create 'Localisation' column
+combined_data["Localisation"] = combined_data["lieuTravail.codePostal"] + ", " + combined_data["Cleaned_Libelle"] + ", France"
+
+# Drop the intermediate column if not needed
+combined_data.drop(columns=["Cleaned_Libelle"], inplace=True)
 
 # Update Google Sheets with the combined data
 worksheet.clear()  # Clear existing content
