@@ -101,7 +101,7 @@ combined_data = combined_data.applymap(clean_value)
 
 #Remove rows with Mesure POEI and Consultant as Intitulé
 combined_data = combined_data[
-    ~combined_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", na=False)
+    ~combined_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", case=False, na=False)
 ]
 
 # Ensure 'lieuTravail.codePostal' is a string
