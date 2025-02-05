@@ -104,6 +104,10 @@ combined_data = combined_data[
     ~combined_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", case=False, na=False)
 ]
 
+#make dateCreation a date dtype
+combined_data["dateCreation"] = pd.to_datetime(combined_data["dateCreation"]).dt.strftime("%Y-%m-%d")
+
+
 # Ensure 'lieuTravail.codePostal' is a string
 combined_data["lieuTravail.codePostal"] = combined_data["lieuTravail.codePostal"].astype(str)
 
