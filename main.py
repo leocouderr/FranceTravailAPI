@@ -6,6 +6,7 @@ from oauth2client.service_account import ServiceAccountCredentials
 import pandas as pd
 import json
 import os
+import numpy as np
 
 
 # Initialize the API client
@@ -106,6 +107,10 @@ combined_data = combined_data[
 
 #make dateCreation a date dtype
 combined_data["dateCreation"] = pd.to_datetime(combined_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="coerce").dt.strftime("%Y-%m-%d")
+
+
+# Replace NaN and infinite values with None (which converts to null in JSON)
+combined_data = combined_data.replace([np.nan, np.inf, -np.inf], None)
 
 
 # Ensure 'lieuTravail.codePostal' is a string
