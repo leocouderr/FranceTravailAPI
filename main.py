@@ -105,7 +105,7 @@ combined_data = combined_data[
 ]
 
 #make dateCreation a date dtype
-combined_data["dateCreation"] = pd.to_datetime(combined_data["dateCreation"]).dt.strftime("%Y-%m-%d")
+combined_data["dateCreation"] = pd.to_datetime(combined_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="coerce").dt.strftime("%Y-%m-%d")
 
 
 # Ensure 'lieuTravail.codePostal' is a string
