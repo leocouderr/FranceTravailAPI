@@ -106,7 +106,7 @@ combined_data = combined_data[
 ]
 
 #make dateCreation a date dtype
-combined_data["dateCreation"] = pd.to_datetime(combined_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="coerce").dt.strftime("%Y-%m-%d")
+combined_data["dateCreation"] = pd.to_datetime(combined_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
 
 
 # Replace NaN and infinite values with None (which converts to null in JSON)
