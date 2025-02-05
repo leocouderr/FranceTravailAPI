@@ -70,6 +70,9 @@ existing_data = pd.DataFrame(worksheet.get_all_records())
 # Convert scraped results into a DataFrame
 new_data = combined_df
 
+#make dateCreation a date dtype
+new_data["dateCreation"] = pd.to_datetime(new_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
+
 # Combine and remove duplicates
 if not existing_data.empty:
     combined_data = pd.concat([existing_data, new_data], ignore_index=True).drop_duplicates(
@@ -104,10 +107,6 @@ combined_data = combined_data.applymap(clean_value)
 combined_data = combined_data[
     ~combined_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", case=False, na=False)
 ]
-
-#make dateCreation a date dtype
-combined_data["dateCreation"] = pd.to_datetime(combined_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
-
 
 # Replace NaN and infinite values with None (which converts to null in JSON)
 combined_data = combined_data.replace([np.nan, np.inf, -np.inf], None)
