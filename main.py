@@ -68,6 +68,10 @@ worksheet = spreadsheet.sheet1
 # Read existing data from Google Sheets into a DataFrame
 existing_data = pd.DataFrame(worksheet.get_all_records())
 
+# Debug: Print the number of rows from get_all_records in existing google sheets
+existing_rows_in_google_sheets = existing_data.shape[0]
+print(f"Existing rows in google sheets: {existing_rows_in_google_sheets}")
+
 # Convert scraped results into a DataFrame
 new_data = combined_df
 
