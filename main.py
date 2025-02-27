@@ -83,7 +83,7 @@ else:
 
 # Debug: Print the number of rows to append
 rows_to_append = combined_data.shape[0]
-print(f"Rows to append: {rows_to_append}")
+print(f"Rows to append before filtering: {rows_to_append}")
 
 # Handle NaN, infinity values before sending to Google Sheets
 # Replace NaN values with 0 or another placeholder (you can customize this)
@@ -126,6 +126,10 @@ combined_data["Localisation"] = (combined_data["lieuTravail.codePostal"] + ", " 
 
 # Drop the intermediate column if not needed
 combined_data.drop(columns=["Cleaned_Libelle"], inplace=True)
+
+# Debug: Print the number of rows to append after filtering
+rows_to_append_after_filtering = combined_data.shape[0]
+print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
 
 # Update Google Sheets with the combined data
 worksheet.clear()  # Clear existing content
