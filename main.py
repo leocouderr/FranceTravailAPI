@@ -7,6 +7,8 @@ import pandas as pd
 import json
 import os
 import numpy as np
+import unicodedata
+import re
 
 
 # Initialize the API client
@@ -129,6 +131,21 @@ combined_data["Localisation"] = (combined_data["lieuTravail.codePostal"] + ", " 
 
 # Drop the intermediate column if not needed
 combined_data.drop(columns=["Cleaned_Libelle"], inplace=True)
+
+#add column titre de annonce sans accents ni special characters
+def remove_accents_and_special(text):
+    # Normalize the text to separate characters from their accents.
+    normalized = unicodedata.normalize('NFD', text)
+    # Remove the combining diacritical marks.
+    without_accents = ''.join(c for c in normalized if not unicodedata.combining(c))
+    # Remove special characters (retain letters, digits and whitespace).
+    cleaned = re.sub(r'[^A-Za-z0-9\s]', '', without_accents)
+    return cleaned
+
+# Create the new column "Titre annonce sans accent" by applying the function on "intitule".
+combined_data["Titre annonce sans accents"] = combined_data["intitule"].apply(
+    lambda x: remove_accents_and_special(x) if isinstance(x, str) else x
+)
 
 # Debug: Print the number of rows to append after filtering
 rows_to_append_after_filtering = combined_data.shape[0]
