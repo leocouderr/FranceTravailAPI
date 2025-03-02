@@ -24,6 +24,7 @@ params_template = {
     "motsCles": "restauration",
     'minCreationDate': dt_to_str_iso(start_dt),
     'maxCreationDate': dt_to_str_iso(end_dt),
+    "sort": 1
 }
 
 # Define the ranges for pagination
