@@ -53,6 +53,9 @@ combined_df = pd.concat(dataframes, ignore_index=True)
 # Debug: Print the total number of rows
 print(f"Total job listings fetched: {combined_df.shape[0]}")
 
+#5 listings les plus récents
+print(combined_df.head())
+
 # Google Sheets API setup
 scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
          "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
