@@ -153,34 +153,38 @@ combined_data["TitreAnnonceSansAccents"] = combined_data["intitule"].apply(
 
 #filter out listings from indeed to avoid duplicates and only keep the url in the json value
 def process_partenaire(cell):
-    # If the cell is a JSON string, try to parse it
+    # If the cell is already a valid URL string, don't change it.
+    if isinstance(cell, str) and cell.startswith("https"):
+        return cell
+    # If the cell is a JSON string, try to parse it.
     if isinstance(cell, str):
         try:
             cell = json.loads(cell)
-        except Exception as e:
-            # If parsing fails, you might want to return an empty string or None
+        except Exception:
             return None
-    # If cell is not a list or is empty, return None
+    # If cell is not a list or is empty, return None.
     if not cell or not isinstance(cell, list):
         return None
     
-    # Check each partner in the list; if any partner has 'nom' equal to 'INDEED', return None to drop this row.
+    # Check each partner in the list; if any partner has 'nom' equal to 'INDEED', return None.
     for partner in cell:
         nom = partner.get('nom', '').strip().upper()
         if nom == 'INDEED':
             return None
     
     # Otherwise, return the URL of the first partner.
-    # (You can adjust this logic if you want to handle multiple partners.)
     return cell[0].get('url', '')
 
-# Apply the function to the column
+# Apply the function to the 'origineOffre.partenaires' column.
 combined_data["origineOffre.partenaires"] = combined_data["origineOffre.partenaires"].apply(process_partenaire)
 
-# Drop rows where the result is None or an empty string
-combined_data = combined_data[
-    combined_data["origineOffre.partenaires"].notnull() & (combined_data["origineOffre.partenaires"] != '')
-]
+# For rows where the processed value is NaN, None, or an empty string, substitute the fallback from 'origineOffre.urlOrigine'.
+combined_data["origineOffre.partenaires"] = combined_data.apply(
+    lambda row: row["origineOffre.partenaires"]
+    if pd.notna(row["origineOffre.partenaires"]) and row["origineOffre.partenaires"] not in [None, '',0,"O"]
+    else row["origineOffre.urlOrigine"],
+    axis=1
+)
 
 # Debug: Print the number of rows to append after filtering
 rows_to_append_after_filtering = combined_data.shape[0]
