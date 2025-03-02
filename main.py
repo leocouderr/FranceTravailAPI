@@ -211,6 +211,9 @@ def safe_json_value(x):
 
 combined_data = combined_data.applymap(safe_json_value)
 
+#last check to remove duplicates based on ID
+combined_data = combined_data.drop_duplicates(subset=['id'])
+
 # Update Google Sheets with the combined data
 worksheet.clear()  # Clear existing content
 worksheet.update([combined_data.columns.tolist()] + combined_data.values.tolist())
