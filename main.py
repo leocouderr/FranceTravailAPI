@@ -212,6 +212,8 @@ def safe_json_value(x):
 combined_data = combined_data.applymap(safe_json_value)
 
 #last check to remove duplicates based on ID
+# Normalize the 'id' column: convert everything to string and remove surrounding whitespace
+combined_data['id'] = combined_data['id'].astype(str).str.strip()
 combined_data = combined_data.drop_duplicates(subset=['id'])
 
 # Update Google Sheets with the combined data
