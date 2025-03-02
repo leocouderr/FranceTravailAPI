@@ -82,13 +82,24 @@ new_data = combined_df
 #make dateCreation a date dtype
 new_data["dateCreation"] = pd.to_datetime(new_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
 
-# Combine and remove duplicates
+#conbine new and existing data, reorder colmun in new data if necessary, add new columns if necessary
 if not existing_data.empty:
-    combined_data = pd.concat([existing_data, new_data], ignore_index=True).drop_duplicates(
-        subset=['id']
-    )
+    # Get the column order from existing_data
+    existing_cols = list(existing_data.columns)
+    # Find extra columns in new_data that aren't in existing_data
+    extra_cols = [col for col in new_data.columns if col not in existing_cols]
+    # The final union of columns: existing order followed by extra columns
+    union_cols = existing_cols + extra_cols
+
+    # Reindex both DataFrames using the union of columns
+    existing_aligned = existing_data.reindex(columns=union_cols)
+    new_aligned = new_data.reindex(columns=union_cols)
+
+    # Concatenate the aligned DataFrames and remove duplicates based on 'id'
+    combined_data = pd.concat([existing_aligned, new_aligned], ignore_index=True).drop_duplicates(subset=['id'])
 else:
-    combined_data = new_data
+    combined_data = new_data.copy()
+
 
 # Debug: Print the number of rows to append
 rows_to_append = combined_data.shape[0]
