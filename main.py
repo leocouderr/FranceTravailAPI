@@ -175,11 +175,11 @@ def process_partenaire(cell):
     return cell[0].get('url', '')
 
 # Apply the function to the column
-combined_df["origineOffre.partenaires"] = combined_df["origineOffre.partenaires"].apply(process_partenaire)
+combined_data["origineOffre.partenaires"] = combined_data["origineOffre.partenaires"].apply(process_partenaire)
 
 # Drop rows where the result is None or an empty string
-combined_df = combined_df[
-    combined_df["origineOffre.partenaires"].notnull() & (combined_df["origineOffre.partenaires"] != '')
+combined_data = combined_data[
+    combined_data["origineOffre.partenaires"].notnull() & (combined_data["origineOffre.partenaires"] != '')
 ]
 
 # Debug: Print the number of rows to append after filtering
