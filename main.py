@@ -151,6 +151,37 @@ combined_data["TitreAnnonceSansAccents"] = combined_data["intitule"].apply(
     lambda x: remove_accents_and_special(x) if isinstance(x, str) else x
 )
 
+#filter out listings from indeed to avoid duplicates and only keep the url in the json value
+def process_partenaire(cell):
+    # If the cell is a JSON string, try to parse it
+    if isinstance(cell, str):
+        try:
+            cell = json.loads(cell)
+        except Exception as e:
+            # If parsing fails, you might want to return an empty string or None
+            return None
+    # If cell is not a list or is empty, return None
+    if not cell or not isinstance(cell, list):
+        return None
+    
+    # Check each partner in the list; if any partner has 'nom' equal to 'INDEED', return None to drop this row.
+    for partner in cell:
+        nom = partner.get('nom', '').strip().upper()
+        if nom == 'INDEED':
+            return None
+    
+    # Otherwise, return the URL of the first partner.
+    # (You can adjust this logic if you want to handle multiple partners.)
+    return cell[0].get('url', '')
+
+# Apply the function to the column
+combined_df["origineOffre.partenaires"] = combined_df["origineOffre.partenaires"].apply(process_partenaire)
+
+# Drop rows where the result is None or an empty string
+combined_df = combined_df[
+    combined_df["origineOffre.partenaires"].notnull() & (combined_df["origineOffre.partenaires"] != '')
+]
+
 # Debug: Print the number of rows to append after filtering
 rows_to_append_after_filtering = combined_data.shape[0]
 print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
