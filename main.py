@@ -101,7 +101,7 @@ if not existing_data.empty:
     new_aligned = new_data.reindex(columns=union_cols)
 
     # Concatenate the aligned DataFrames and remove duplicates based on 'id'
-    combined_data = pd.concat([existing_aligned, new_aligned], ignore_index=True).drop_duplicates(subset=['id'], keep='first')
+    combined_data = pd.concat([new_aligned, existing_aligned], ignore_index=True).drop_duplicates(subset=['id'], keep='first')
 else:
     combined_data = new_data.copy()
 
@@ -110,6 +110,8 @@ else:
 rows_to_append = combined_data.shape[0]
 print(f"Rows to append before filtering: {rows_to_append}")
 print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
+print(f"Check date after column mapping: {combined_data.id.head()}")
+
 
 # Handle NaN, infinity values before sending to Google Sheets
 # Replace NaN values with 0 or another placeholder (you can customize this)
@@ -121,22 +123,17 @@ combined_data.replace([float('inf'), float('-inf')], 0, inplace=True)
 # Optional: Ensure all float types are valid (e.g., replace any invalid float with 0)
 combined_data = combined_data.applymap(lambda x: 0 if isinstance(x, float) and (x == float('inf') or x == float('-inf') or x != x) else x)
 
-# Optional: Ensuring no invalid values (like lists or dicts) in any column
-def clean_value(value):
-    if isinstance(value, (list, dict)):
-        return str(value)  # Convert lists or dicts to string
-    return value
-
-combined_data = combined_data.applymap(clean_value)
-
 #Remove rows with Mesure POEI and Consultant as Intitulé
 combined_data = combined_data[
     ~combined_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", case=False, na=False)
 ]
 
+#check after Mesure POEI
+print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
+print(f"Check date after column mapping: {combined_data.id.head()}")
+
 # Replace NaN and infinite values with None (which converts to null in JSON)
 combined_data = combined_data.replace([np.nan, np.inf, -np.inf], None)
-
 
 # Ensure 'lieuTravail.codePostal' is a string
 combined_data["lieuTravail.codePostal"] = combined_data["lieuTravail.codePostal"].astype(str)
@@ -153,6 +150,10 @@ combined_data["Localisation"] = (combined_data["lieuTravail.codePostal"] + ", " 
 # Drop the intermediate column if not needed
 combined_data.drop(columns=["Cleaned_Libelle"], inplace=True)
 
+#check before titre sans accent
+print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
+print(f"Check date after column mapping: {combined_data.id.head()}")
+
 #add column titre de annonce sans accents ni special characters
 def remove_accents_and_special(text):
     # Normalize the text to separate characters from their accents.
@@ -167,6 +168,10 @@ def remove_accents_and_special(text):
 combined_data["TitreAnnonceSansAccents"] = combined_data["intitule"].apply(
     lambda x: remove_accents_and_special(x) if isinstance(x, str) else x
 )
+
+#check after titre sans accent
+print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
+print(f"Check date after column mapping: {combined_data.id.head()}")
 
 #filter out listings from indeed to avoid duplicates and only keep the url in the json value
 def process_partenaire(cell):
@@ -195,6 +200,10 @@ def process_partenaire(cell):
 # Apply the function to the 'origineOffre.partenaires' column.
 combined_data["origineOffre.partenaires"] = combined_data["origineOffre.partenaires"].apply(process_partenaire)
 
+#check after indeed filtering
+print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
+print(f"Check date after column mapping: {combined_data.id.head()}")
+
 # For rows where the processed value is NaN, None, or an empty string, substitute the fallback from 'origineOffre.urlOrigine'.
 combined_data["origineOffre.partenaires"] = combined_data.apply(
     lambda row: row["origineOffre.partenaires"]
@@ -221,7 +230,8 @@ combined_data = combined_data.applymap(safe_json_value)
 # Debug: Print the number of rows to append after filtering
 rows_to_append_after_filtering = combined_data.shape[0]
 print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
-print(f"Head total annonces: {combined_data.head()}")
+print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
+print(f"Check date after column mapping: {combined_data.id.head()}")
 
 
 # Update Google Sheets with the combined data
