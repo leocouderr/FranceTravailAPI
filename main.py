@@ -78,6 +78,8 @@ print(f"Existing rows in google sheets: {existing_rows_in_google_sheets}")
 
 # Convert scraped results into a DataFrame
 new_data = combined_df
+print(f"Head nouvelles annonces: {new_data.head()}")
+
 
 #make dateCreation a date dtype
 new_data["dateCreation"] = pd.to_datetime(new_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
@@ -215,6 +217,8 @@ combined_data = combined_data.drop_duplicates(subset=['id'])
 # Debug: Print the number of rows to append after filtering
 rows_to_append_after_filtering = combined_data.shape[0]
 print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
+print(f"Head total annonces: {combined_data.head()}")
+
 
 # Update Google Sheets with the combined data
 worksheet.clear()  # Clear existing content
