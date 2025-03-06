@@ -197,10 +197,6 @@ combined_data["origineOffre.partenaires"] = combined_data.apply(
     axis=1
 )
 
-# Debug: Print the number of rows to append after filtering
-rows_to_append_after_filtering = combined_data.shape[0]
-print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
-
 #last check for out of range json float and convert to json compliant None
 def safe_json_value(x):
     if isinstance(x, float):
@@ -215,6 +211,10 @@ combined_data = combined_data.applymap(safe_json_value)
 # Normalize the 'id' column: convert everything to string and remove surrounding whitespace
 combined_data['id'] = combined_data['id'].astype(str).str.strip()
 combined_data = combined_data.drop_duplicates(subset=['id'])
+
+# Debug: Print the number of rows to append after filtering
+rows_to_append_after_filtering = combined_data.shape[0]
+print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
 
 # Update Google Sheets with the combined data
 worksheet.clear()  # Clear existing content
