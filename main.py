@@ -85,6 +85,7 @@ print(f"Head nouvelles annonces: {new_data.head()}")
 
 #make dateCreation a date dtype
 new_data["dateCreation"] = pd.to_datetime(new_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
+print(f"Check Rows date after modifiying date column: {new_data.dateCreation.head()}")
 
 #conbine new and existing data, reorder colmun in new data if necessary, add new columns if necessary
 if not existing_data.empty:
