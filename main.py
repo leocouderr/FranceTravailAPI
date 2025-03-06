@@ -98,7 +98,8 @@ if not existing_data.empty:
     new_aligned = new_data.reindex(columns=union_cols)
 
     # Concatenate the aligned DataFrames and remove duplicates based on 'id'
-    combined_data = pd.concat([existing_aligned, new_aligned], ignore_index=True).drop_duplicates(subset=['id'])
+    combined_data = pd.concat([existing_aligned, new_aligned], ignore_index=True)
+  #.drop_duplicates(subset=['id'])
 else:
     combined_data = new_data.copy()
 
