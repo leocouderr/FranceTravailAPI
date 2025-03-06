@@ -1,9 +1,11 @@
-name: Run Main.py Every 1 Hour (7AM-7PM)
+name: Run Main.py Every 1 Hour (7AM-7PM French Time)
 
 on:
   schedule:
-    # Run every hour
-    - cron: "0 * * * *"
+    # Winter Time (CET: UTC+1) -> Runs between 06:00-18:00 UTC (07:00-19:00 CET)
+    - cron: "0 6-18 * 11-3 *"
+    # Summer Time (CEST: UTC+2) -> Runs between 05:00-17:00 UTC (07:00-19:00 CEST)
+    - cron: "0 5-17 * 4-10 *"
   workflow_dispatch: # Allows manual trigger from the GitHub UI
 
 jobs:
@@ -23,14 +25,6 @@ jobs:
       run: |
         python -m pip install --upgrade pip
         pip install -r requirements.txt
-
-    - name: Check time and exit if out of range
-      run: |
-        HOUR=$(date -u +"%H")
-        if [ "$HOUR" -lt 7 ] || [ "$HOUR" -gt 19 ]; then
-          echo "Outside allowed time range (7AM-7PM UTC). Exiting."
-          exit 0
-        fi
 
     - name: Set up Google API credentials
       env:
