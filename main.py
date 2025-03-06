@@ -101,7 +101,7 @@ if not existing_data.empty:
     new_aligned = new_data.reindex(columns=union_cols)
 
     # Concatenate the aligned DataFrames and remove duplicates based on 'id'
-    combined_data = pd.concat([new_aligned, existing_aligned], ignore_index=True).drop_duplicates(subset=['id'], keep='first')
+    combined_data = pd.concat([new_aligned, existing_aligned], ignore_index=True).drop_duplicates(subset=['origineOffre.urlOrigine'], keep='first')
 else:
     combined_data = new_data.copy()
 
@@ -233,7 +233,7 @@ combined_data = combined_data.applymap(safe_json_value)
 #last check to remove duplicates based on ID
 # Normalize the 'id' column: convert everything to string and remove surrounding whitespace
 #combined_data['id'] = combined_data['id'].astype(str).str.strip()
-#combined_data = combined_data.drop_duplicates(subset=['id'], keep='first')
+#combined_data = combined_data.drop_duplicates(subset=['origineOffre.urlOrigine'], keep='first')
 
 # Debug: Print the number of rows to append after filtering
 rows_to_append_after_filtering = combined_data.shape[0]
