@@ -123,6 +123,14 @@ combined_data.replace([float('inf'), float('-inf')], 0, inplace=True)
 # Optional: Ensure all float types are valid (e.g., replace any invalid float with 0)
 combined_data = combined_data.applymap(lambda x: 0 if isinstance(x, float) and (x == float('inf') or x == float('-inf') or x != x) else x)
 
+# Optional: Ensuring no invalid values (like lists or dicts) in any column
+def clean_value(value):
+    if isinstance(value, (list, dict)):
+        return str(value)  # Convert lists or dicts to string
+    return value
+
+combined_data = combined_data.applymap(clean_value)
+
 #Remove rows with Mesure POEI and Consultant as Intitulé
 combined_data = combined_data[
     ~combined_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", case=False, na=False)
