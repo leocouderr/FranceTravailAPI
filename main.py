@@ -241,9 +241,26 @@ print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
 print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
 print(f"Check date after column mapping: {combined_data.id.head()}")
 
+MAX_RETRIES = 5  # Number of times to retry
+RETRY_DELAY = 30  # Seconds to wait before retrying
+
+def safe_update(worksheet, data):
+    for attempt in range(MAX_RETRIES):
+        try:
+            worksheet.update(data)
+            print("Google Sheets update successful!")
+            return
+        except APIError as e:
+            print(f"Error: {e}. Retrying in {RETRY_DELAY} seconds...")
+            time.sleep(RETRY_DELAY)
+    print("Max retries reached. Update failed.")
+
+# Convert your DataFrame to a list and update the sheet safely
+data_to_upload = [combined_data.columns.tolist()] + combined_data.values.tolist()
+safe_update(worksheet, data_to_upload)
 
 # Update Google Sheets with the combined data
-worksheet.clear()  # Clear existing content
-worksheet.update([combined_data.columns.tolist()] + combined_data.values.tolist())
+#worksheet.clear()  # Clear existing content
+#worksheet.update([combined_data.columns.tolist()] + combined_data.values.tolist())
 
 print("New rows successfully appended to Google Sheets without duplicates!")
