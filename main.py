@@ -101,7 +101,7 @@ if not existing_data.empty:
     new_aligned = new_data.reindex(columns=union_cols)
 
     # Concatenate the aligned DataFrames and remove duplicates based on 'id'
-    combined_data = pd.concat([existing_aligned, new_aligned], ignore_index=True)
+    combined_data = pd.concat([new_aligned, existing_aligned], ignore_index=True)
   #.drop_duplicates(subset=['id'])
 else:
     combined_data = new_data.copy()
@@ -110,6 +110,7 @@ else:
 # Debug: Print the number of rows to append
 rows_to_append = combined_data.shape[0]
 print(f"Rows to append before filtering: {rows_to_append}")
+print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
 
 # Handle NaN, infinity values before sending to Google Sheets
 # Replace NaN values with 0 or another placeholder (you can customize this)
