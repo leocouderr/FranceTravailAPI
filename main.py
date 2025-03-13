@@ -10,6 +10,9 @@ import numpy as np
 import unicodedata
 import re
 import requests
+import asyncio
+import httpx
+import nest_asyncio  # Allows running async code in Jupyter
 
 
 # Initialize the API client
@@ -83,12 +86,80 @@ print(f"Existing rows in google sheets: {existing_rows_in_google_sheets}")
 new_data = combined_df
 print(f"Head nouvelles annonces: {new_data.head()}")
 
-
 #make dateCreation a date dtype
 new_data["dateCreation"] = pd.to_datetime(new_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
 print(f"Check Rows date after modifiying date column: {new_data.dateCreation.head()}")
 
-#conbine new and existing data, reorder colmun in new data if necessary, add new columns if necessary
+# Apply nest_asyncio to fix event loop issue in Jupyter
+nest_asyncio.apply()
+
+# Data Gouv API URL
+API_URL = "https://api-adresse.data.gouv.fr/search"
+
+# Function to call API asynchronously with retries
+async def get_geodata(client, address, retries=3):
+    params = {"q": address, "limit": 1}
+
+    for attempt in range(retries):
+        try:
+            response = await client.get(API_URL, params=params, timeout=5)
+
+            if response.status_code == 503:  # Server overloaded
+                print(f"503 Error - Retrying {address} (Attempt {attempt+1})...")
+                await asyncio.sleep(2 ** attempt)  # Exponential backoff
+                continue
+
+            response.raise_for_status()  # Raise error if response is bad
+            data = response.json()
+
+            if data["features"]:
+                props = data["features"][0]["properties"]
+                geo = data["features"][0]["geometry"]["coordinates"]
+
+                ville = props.get("city", "")
+                code_postal = props.get("postcode", "")
+                longitude = geo[0] if geo else None
+                latitude = geo[1] if geo else None
+                contexte = props.get("context", "")
+
+                # Extract region name (after second comma)
+                region = contexte.split(", ")[-1] if contexte.count(",") >= 2 else ""
+
+                return ville, code_postal, longitude, latitude, region
+        
+        except Exception as e:
+            print(f"Error fetching data for {address} (Attempt {attempt+1}): {e}")
+        
+        await asyncio.sleep(2 ** attempt)  # Exponential backoff for retries
+
+    return None, None, None, None, None  # Return empty values if all retries fail
+
+# Async function to process all addresses with rate limiting
+async def process_addresses(address_list, delay_between_requests=0.017):  # 1/60 = ~0.017s
+    results = []
+    async with httpx.AsyncClient() as client:
+        for i, address in enumerate(address_list):
+            result = await get_geodata(client, address)
+            results.append(result)
+            
+            print(f"Processed {i + 1} / {len(address_list)}")
+
+            # Respect 60 requests per second limit
+            await asyncio.sleep(delay_between_requests)  
+
+    return results
+
+# Run API calls asynchronously
+addresses = new_data["Localisation"].tolist()
+geodata_results = asyncio.run(process_addresses(addresses))
+
+# Assign the results to the DataFrame
+new_data[["Ville", "Code Postal", "Longitude", "Latitude", "Region"]] = pd.DataFrame(geodata_results)
+
+# Add "France Travail" column
+new_data["Source"] = "France Travail"
+
+# combine new and existing data, reorder columns in new data if necessary, add new columns if necessary
 if not existing_data.empty:
     # Get the column order from existing_data
     existing_cols = list(existing_data.columns)
@@ -230,45 +301,6 @@ def safe_json_value(x):
     return x
 
 combined_data = combined_data.applymap(safe_json_value)
-
-# Define function to call Data Gouv API
-def get_geodata(address):
-    url = "https://api-adresse.data.gouv.fr/search"
-    params = {"q": address, "limit": 1}
-    
-    try:
-        response = requests.get(url, params=params)
-        response.raise_for_status()  # Raise error for bad response
-        data = response.json()
-        
-        if data["features"]:
-            props = data["features"][0]["properties"]
-            geo = data["features"][0]["geometry"]["coordinates"]
-            
-            ville = props.get("city", "")
-            code_postal = props.get("postcode", "")
-            longitude = geo[0] if geo else None
-            latitude = geo[1] if geo else None
-            contexte = props.get("context", "")
-
-            # Extract region name (after second comma)
-            region = contexte.split(", ")[-1] if contexte.count(",") >= 2 else ""
-
-            return ville, code_postal, longitude, latitude, region
-        else:
-            return None, None, None, None, None
-
-    except requests.exceptions.RequestException as e:
-        print(f"Error fetching data for {address}: {e}")
-        return None, None, None, None, None
-
-# Apply function to each row in the Localisation column
-combined_data[["Ville", "Code Postal", "Longitude", "Latitude", "Region"]] = combined_data["Localisation"].apply(
-    lambda x: pd.Series(get_geodata(x))
-)
-
-#Ajouter une colonne source
-combined_data["Source"] = "France Travail"
 
 #last check to remove duplicates based on ID
 # Normalize the 'id' column: convert everything to string and remove surrounding whitespace
