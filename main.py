@@ -90,6 +90,21 @@ print(f"Head nouvelles annonces: {new_data.head()}")
 new_data["dateCreation"] = pd.to_datetime(new_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
 print(f"Check Rows date after modifiying date column: {new_data.dateCreation.head()}")
 
+# Ensure 'lieuTravail.codePostal' is a string
+new_data["lieuTravail.codePostal"] = new_data["lieuTravail.codePostal"].astype(str)
+
+# Add leading zeros if the postal code has less than 5 characters
+new_data["lieuTravail.codePostal"] = new_data["lieuTravail.codePostal"].str.zfill(5)
+
+# Remove numbers and hyphens from 'lieuTravail.libelle'
+new_data["Cleaned_Libelle"] = new_data["lieuTravail.libelle"].str.replace(r"^\d+\s*-\s*", "", regex=True).str.strip()
+
+# Create 'Localisation' column
+new_data["Localisation"] = (new_data["lieuTravail.codePostal"] + ", " + new_data["Cleaned_Libelle"] + ", France").str.upper()
+
+# Drop the intermediate column if not needed
+new_data.drop(columns=["Cleaned_Libelle"], inplace=True)
+
 # Apply nest_asyncio to fix event loop issue in Jupyter
 #nest_asyncio.apply()
 
@@ -214,21 +229,6 @@ print(f"Check date after column mapping: {combined_data.id.head()}")
 
 # Replace NaN and infinite values with None (which converts to null in JSON)
 combined_data = combined_data.replace([np.nan, np.inf, -np.inf], None)
-
-# Ensure 'lieuTravail.codePostal' is a string
-combined_data["lieuTravail.codePostal"] = combined_data["lieuTravail.codePostal"].astype(str)
-
-# Add leading zeros if the postal code has less than 5 characters
-combined_data["lieuTravail.codePostal"] = combined_data["lieuTravail.codePostal"].str.zfill(5)
-
-# Remove numbers and hyphens from 'lieuTravail.libelle'
-combined_data["Cleaned_Libelle"] = combined_data["lieuTravail.libelle"].str.replace(r"^\d+\s*-\s*", "", regex=True).str.strip()
-
-# Create 'Localisation' column
-combined_data["Localisation"] = (combined_data["lieuTravail.codePostal"] + ", " + combined_data["Cleaned_Libelle"] + ", France").str.upper()
-
-# Drop the intermediate column if not needed
-combined_data.drop(columns=["Cleaned_Libelle"], inplace=True)
 
 #check before titre sans accent
 print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
