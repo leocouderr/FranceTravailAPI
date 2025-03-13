@@ -91,7 +91,7 @@ new_data["dateCreation"] = pd.to_datetime(new_data["dateCreation"], format="%Y-%
 print(f"Check Rows date after modifiying date column: {new_data.dateCreation.head()}")
 
 # Apply nest_asyncio to fix event loop issue in Jupyter
-nest_asyncio.apply()
+#nest_asyncio.apply()
 
 # Data Gouv API URL
 API_URL = "https://api-adresse.data.gouv.fr/search"
