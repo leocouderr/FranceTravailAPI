@@ -9,6 +9,7 @@ import os
 import numpy as np
 import unicodedata
 import re
+import requests
 
 
 # Initialize the API client
@@ -229,6 +230,45 @@ def safe_json_value(x):
     return x
 
 combined_data = combined_data.applymap(safe_json_value)
+
+# Define function to call Data Gouv API
+def get_geodata(address):
+    url = "https://api-adresse.data.gouv.fr/search"
+    params = {"q": address, "limit": 1}
+    
+    try:
+        response = requests.get(url, params=params)
+        response.raise_for_status()  # Raise error for bad response
+        data = response.json()
+        
+        if data["features"]:
+            props = data["features"][0]["properties"]
+            geo = data["features"][0]["geometry"]["coordinates"]
+            
+            ville = props.get("city", "")
+            code_postal = props.get("postcode", "")
+            longitude = geo[0] if geo else None
+            latitude = geo[1] if geo else None
+            contexte = props.get("context", "")
+
+            # Extract region name (after second comma)
+            region = contexte.split(", ")[-1] if contexte.count(",") >= 2 else ""
+
+            return ville, code_postal, longitude, latitude, region
+        else:
+            return None, None, None, None, None
+
+    except requests.exceptions.RequestException as e:
+        print(f"Error fetching data for {address}: {e}")
+        return None, None, None, None, None
+
+# Apply function to each row in the Localisation column
+combined_data[["Ville", "Code Postal", "Longitude", "Latitude", "Region"]] = combined_data["Localisation"].apply(
+    lambda x: pd.Series(get_geodata(x))
+)
+
+#Ajouter une colonne source
+combined_data["Source"] = "France Travail"
 
 #last check to remove duplicates based on ID
 # Normalize the 'id' column: convert everything to string and remove surrounding whitespace
