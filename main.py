@@ -253,6 +253,9 @@ combined_data["TitreAnnonceSansAccents"] = combined_data["intitule"].apply(
 print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
 print(f"Check date after column mapping: {combined_data.id.head()}")
 
+#check urls partenaire
+print(f"check urls partenaire: {combined_data["origineOffre.urlOrigine"].head(15)}")
+
 #filter out listings from indeed to avoid duplicates and only keep the url in the json value
 def process_partenaire(cell):
     # If the cell is already a valid URL string, don't change it.
@@ -280,6 +283,9 @@ def process_partenaire(cell):
 # Apply the function to the 'origineOffre.partenaires' column.
 combined_data["origineOffre.partenaires"] = combined_data["origineOffre.partenaires"].apply(process_partenaire)
 
+#check urls partenaire
+print(f"check urls partenaire: {combined_data["origineOffre.urlOrigine"].head(15)}")
+
 #check after indeed filtering
 print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
 print(f"Check date after column mapping: {combined_data.id.head()}")
@@ -291,6 +297,9 @@ combined_data["origineOffre.partenaires"] = combined_data.apply(
     else row["origineOffre.urlOrigine"],
     axis=1
 )
+
+#check urls partenaire
+print(f"check urls partenaire: {combined_data["origineOffre.urlOrigine"].head(15)}")
 
 #last check for out of range json float and convert to json compliant None
 def safe_json_value(x):
