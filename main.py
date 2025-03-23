@@ -86,7 +86,7 @@ print(f"Existing rows in google sheets: {existing_rows_in_google_sheets}")
 new_data = combined_df
 print(f"Head nouvelles annonces: {new_data.head()}")
 #check urls partenaire
-print(f"check urls partenaire: {combined_df['origineOffre.urlOrigine'].head(15)}")
+#print(f"check urls partenaire: {combined_df['origineOffre.urlOrigine'].head(15)}")
 
 #make dateCreation a date dtype
 new_data["dateCreation"] = pd.to_datetime(new_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
@@ -201,7 +201,7 @@ print(f"Rows to append before filtering: {rows_to_append}")
 print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
 print(f"Check date after column mapping: {combined_data.id.head()}")
 #check urls partenaire
-print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\"].head(15)}")
+#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 
 # Handle NaN, infinity values before sending to Google Sheets
@@ -232,7 +232,7 @@ print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
 print(f"Check date after column mapping: {combined_data.id.head()}")
 
 #check urls partenaire
-print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
+#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 # Replace NaN and infinite values with None (which converts to null in JSON)
 combined_data = combined_data.replace([np.nan, np.inf, -np.inf], None)
@@ -261,7 +261,7 @@ print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
 print(f"Check date after column mapping: {combined_data.id.head()}")
 
 #check urls partenaire
-print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
+#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 #filter out listings from indeed to avoid duplicates and only keep the url in the json value
 def process_partenaire(cell):
@@ -291,7 +291,7 @@ def process_partenaire(cell):
 combined_data["origineOffre.partenaires"] = combined_data["origineOffre.partenaires"].apply(process_partenaire)
 
 #check urls partenaire
-print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
+#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 #check after indeed filtering
 print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
@@ -306,7 +306,7 @@ combined_data["origineOffre.partenaires"] = combined_data.apply(
 )
 
 #check urls partenaire
-print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
+#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 #last check for out of range json float and convert to json compliant None
 def safe_json_value(x):
