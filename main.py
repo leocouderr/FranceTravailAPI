@@ -247,8 +247,10 @@ def remove_accents_and_special(text):
     normalized = unicodedata.normalize('NFD', text)
     # Remove the combining diacritical marks.
     without_accents = ''.join(c for c in normalized if not unicodedata.combining(c))
-    # Remove special characters (retain letters, digits and whitespace).
-    cleaned = re.sub(r'[^A-Za-z0-9\s]', '', without_accents)
+    # Replace special characters (-, ') with a space.
+    cleaned = re.sub(r"[-']", " ", without_accents)
+    # Remove other special characters (retain letters, digits, and whitespace).
+    cleaned = re.sub(r"[^A-Za-z0-9\s]", "", cleaned)
     return cleaned
 
 # Create the new column "Titre annonce sans accent" by applying the function on "intitule".
