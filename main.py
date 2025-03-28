@@ -13,6 +13,8 @@ import requests
 import asyncio
 import httpx
 import nest_asyncio  # Allows running async code in Jupyter
+from gspread.exceptions import APIError
+
 
 
 # Initialize the API client
@@ -159,7 +161,7 @@ async def process_addresses(address_list, delay_between_requests=0.017):  # 1/60
             result = await get_geodata(client, address)
             results.append(result)
             
-            print(f"Processed {i + 1} / {len(address_list)}")
+            #print(f"Processed {i + 1} / {len(address_list)}")
 
             # Respect 60 requests per second limit
             await asyncio.sleep(delay_between_requests)  
