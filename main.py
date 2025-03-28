@@ -36,10 +36,9 @@ params_template = {
 }
 
 # Define the ranges for pagination
-ranges = [(0, 149)]
-#, (150, 299), (300, 449), (450, 599),
- #  (600, 749), (750, 899), (900, 1049), (1050, 1149)
-#]
+ranges = [(0, 149), (150, 299), (300, 449), (450, 599),
+  (600, 749), (750, 899), (900, 1049), (1050, 1149)
+]
 
 # Initialize a list to store dataframes
 dataframes = []
