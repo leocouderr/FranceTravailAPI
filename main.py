@@ -15,48 +15,88 @@ import httpx
 import nest_asyncio  # Allows running async code in Jupyter
 from gspread.exceptions import APIError
 import time
+import requests
+from datetime import datetime, timedelta
 
+CLIENT_ID = 'PAR_alfredrestauration_487210a282c499a6c091cb90c60c863126cf9ad19ee41d15991f6855364f66f2'
+CLIENT_SECRET = '96a3abc286012daf4b5ce3c7ff44fcec45d1eff0e135df1b2260d89f08c3ae57'
+TOKEN_URL = 'https://entreprise.pole-emploi.fr/connexion/oauth2/access_token?realm=%2Fpartenaire'
+API_URL = 'https://api.francetravail.io/partenaire/offresdemploi/v2/offres/search'
 
+def get_access_token():
+    payload = {
+        'grant_type': 'client_credentials',
+        'client_id': CLIENT_ID,
+        'client_secret': CLIENT_SECRET,
+        'scope': 'api_offresdemploiv2 o2dsoffre'
+    }
+    response = requests.post(TOKEN_URL, data=payload)
+    response.raise_for_status()
+    return response.json()['access_token']
 
+def dt_to_str_iso(dt):
+    return dt.strftime("%Y-%m-%dT%H:%M:%SZ")
 
-# Initialize the API client
-client = Api(client_id="PAR_alfredrestauration_487210a282c499a6c091cb90c60c863126cf9ad19ee41d15991f6855364f66f2", 
-             client_secret="96a3abc286012daf4b5ce3c7ff44fcec45d1eff0e135df1b2260d89f08c3ae57")
+def fetch_all_offers(token, base_search_params=None):
+    headers = {
+        'Authorization': f'Bearer {token}',
+        'Content-Type': 'application/json'
+    }
 
-# Define the date range
-start_dt = datetime.datetime(2024, 1, 1, 12, 30)
-end_dt = datetime.datetime.today()
+    # Ranges: 8 pages of 150 items each = 1200 max
+    ranges = [
+        (0, 149), (150, 299), (300, 449),
+        (450, 599), (600, 749), (750, 899),
+        (900, 1049), (1050, 1149)
+    ]
 
-# Base parameters for the API request
-params_template = {
-    "motsCles": "restauration",
-    'minCreationDate': dt_to_str_iso(start_dt),
-    'maxCreationDate': dt_to_str_iso(end_dt),
-    "sort": 1
-}
+    all_offers = []
+    seen_ids = set()
 
-# Define the ranges for pagination
-ranges = [(0, 149),
-         (150, 299), (300, 449), (450, 599), (600, 749), (750, 899), (900, 1049), (1050, 1149)]
+    for start, end in ranges:
+        params = dict(base_search_params)  # copy base params
+        params['range'] = f"{start}-{end}"
 
-# Initialize a list to store dataframes
-dataframes = []
+        response = requests.get(API_URL, headers=headers, params=params)
+        response.raise_for_status()
+        data = response.json()
 
-for start, end in ranges:
-    # Update the range parameter for the current batch
-    params = params_template.copy()
-    params['range'] = f"{start}-{end}"
-    print(f"Fetching job listings from {start} to {end}...")
+        offers = data.get('resultats', [])
+        new_offers = [o for o in offers if o['id'] not in seen_ids]
 
-    # Perform the API request
-    search_on_big_data = client.search(params=params)
-    df = pd.json_normalize(search_on_big_data["resultats"])
+        for o in new_offers:
+            seen_ids.add(o['id'])
 
-    # Append the results to the list
-    dataframes.append(df)
+        all_offers.extend(new_offers)
+        print(f"Fetched {len(new_offers)} new offers from range {start}-{end}")
+
+        if len(offers) < (end - start + 1):  # Stop early if fewer results
+            break
+
+    print(f"✅ Total unique offers fetched: {len(all_offers)}")
+    return all_offers
+
+# === Main ===
+if __name__ == "__main__":
+    token = get_access_token()
+
+    today = datetime.utcnow()
+    one_month_ago = today - timedelta(days=30)
+
+    base_search_params = {
+        'motsCles': 'restauration',
+        'minCreationDate': dt_to_str_iso(one_month_ago),
+        'maxCreationDate': dt_to_str_iso(today),
+        'sort': 1
+    }
+
+    offers = fetch_all_offers(token, base_search_params)
+    
+combined_df = pd.json_normalize(offers)
+combined_df = df.reset_index(drop=True)
 
 # Combine all dataframes into a single dataframe
-combined_df = pd.concat(dataframes, ignore_index=True)
+#combined_df = pd.concat(dataframes, ignore_index=True)
 
 # Debug: Print the total number of rows
 print(f"Total job listings fetched: {combined_df.shape[0]}")
