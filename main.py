@@ -93,7 +93,7 @@ if __name__ == "__main__":
     offers = fetch_all_offers(token, base_search_params)
     
 combined_df = pd.json_normalize(offers)
-combined_df = df.reset_index(drop=True)
+combined_df = combined_df.reset_index(drop=True)
 
 # Combine all dataframes into a single dataframe
 #combined_df = pd.concat(dataframes, ignore_index=True)
