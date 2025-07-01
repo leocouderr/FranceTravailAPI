@@ -102,7 +102,6 @@ combined_df = combined_df.reset_index(drop=True)
 print(f"Total job listings fetched: {combined_df.shape[0]}")
 
 #5 listings les plus récents
-print(end_dt)
 print(combined_df.dateCreation.head())
 print(combined_df.id.head())
 
