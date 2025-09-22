@@ -17,6 +17,11 @@ from gspread.exceptions import APIError
 import time
 import requests
 from datetime import datetime, timedelta
+from openai import OpenAI
+import instructor
+from enum import Enum
+from pydantic import BaseModel, Field, field_validator, constr, ValidationError, model_validator
+from typing import List, Optional, Any
 
 CLIENT_ID = 'PAR_alfredrestauration_487210a282c499a6c091cb90c60c863126cf9ad19ee41d15991f6855364f66f2'
 CLIENT_SECRET = '96a3abc286012daf4b5ce3c7ff44fcec45d1eff0e135df1b2260d89f08c3ae57'
@@ -218,6 +223,295 @@ new_data[["Ville", "Code Postal", "Longitude", "Latitude", "Region"]] = pd.DataF
 # Add "France Travail" column
 new_data["Source"] = "France Travail"
 
+# -------- DEBUT CHATGPT DATA ENRICHMENT --------------------------------------------------------------------------------------------
+
+OPENAI_API_KEY = os.getenv("OPENAI_API_KEY")
+client_ai = instructor.patch(OpenAI(api_key=OPENAI_API_KEY))
+
+class Loge(str, Enum):
+    LOGE = "Logé"
+    NON_LOGE = "Non Logé"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+class TypeContrat(str, Enum):
+    CDD = "CDD"
+    CDI = "CDI"
+    STAGE = "Stage"
+    APPRENTISSAGE = "Apprentissage"
+    INTERIM = "Interim"
+    EXTRA = "Extra"
+    SAISONNIER = "Saisonnier"
+    ALTERNANCE = "Alternance"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class CoupleAccepte(str, Enum):
+    ACCEPTE = "Couple accepté"
+    NON_ACCEPTE = "Couple non accepté"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class CategorieEtablissement(str, Enum):
+    GASTRONOMIQUE = "Gastronomique"
+    BRASSERIE = "Brasserie"
+    BAR = "Bar"
+    RAPIDE = "Restauration rapide"
+    COLLECTIVE = "Restauration collective"
+    RESTAURANT = "Restaurant"
+    HOTEL_LUXE = "Hôtel luxe"
+    HOTEL = "Hôtel"
+    CAMPING = "Camping"
+    CAFE = "Café/Salon de thé"
+    BOULANGERIE = "Boulangerie/Patisserie"
+    ETOILE = "Etoile Michelin"
+    PALACE = "Palace"
+    TRAITEUR = "Traiteur/Événementiel/Banquet"
+    SPA = "Spa"
+    LABORATOIRE = "Laboratoire"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class CategorieJob1(str, Enum):
+    RESTAURATION = "Restauration"
+    HOTELLERIE = "Hôtellerie"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+    GARBAGE = "Support & Back-office"
+
+
+class CategorieJob2(str, Enum):
+    SALLE = "Salle & Service"
+    DIRECTION = "Direction & Management"
+    SUPPORT = "Support & Back-office"
+    CUISINE = "Cuisine"
+    SPA = "Spa & Bien-être"
+    ETAGES = "Étages & Housekeeping"
+    BAR = "Bar & Sommellerie"
+    RECEPTION = "Réception & Hébergement"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class CategorieJob3(str, Enum):
+    CHEF_EXECUTIF = "Chef exécutif"
+    CHEF_CUISINE = "Chef de cuisine"
+    SOUS_CHEF = "Sous-chef"
+    CHEF_PARTIE = "Chef de partie"
+    COMMIS_CUISINE = "Commis de cuisine"
+    PATISSIER = "Pâtissier"
+    BOULANGER = "Boulanger"
+    PIZZAIOLO = "Pizzaiolo"
+    TRAITEUR = "Traiteur"
+    MANAGER = "Manager / Responsable"
+    EMPLOYE = "Employé polyvalent"
+    PLONGEUR = "Plongeur"
+    STEWARD = "Steward"
+    DIRECTEUR = "Directeur"
+    RESPONSABLE_SALLE = "Responsable de salle"
+    MAITRE_HOTEL = "Maître d’hôtel"
+    CHEF_RANG = "Chef de rang"
+    COMMIS_SALLE = "Commis de salle / Runner"
+    SERVEUR = "Serveur"
+    SOMMELIER = "Sommelier"
+    BARMAN = "Barman"
+    BARISTA = "Barista"
+    RECEPTIONNISTE = "Réceptionniste / Hôte d’accueil"
+    CONCIERGE = "Concierge"
+    BAGAGISTE = "Bagagiste / Voiturier"
+    VALET = "Valet / Femme de chambre"
+    MARKETING = "Marketing / Communication"
+    AGENT_RESERVATIONS = "Agent de réservations"
+    REVENUE_MANAGER = "Revenue manager"
+    GOUVERNANT = "Gouvernant(e)"
+    SPA_PRATICIEN = "Spa praticien(ne) / Ésthéticien(ne)"
+    COACH = "Coach sportif"
+    MAITRE_NAGEUR = "Maître-nageur"
+    ANIMATION = "Animation / Événementiel"
+    COMMERCIAL = "Commercial"
+    RH = "RH / Paie"
+    COMPTABILITE = "Comptabilité / Contrôle de gestion"
+    TECHNICIEN = "Technicien / Maintenance"
+    IT = "IT / Data"
+    HACCP = "HACCP manager"
+    CUISINIER = "Cuisinier"
+    LIMONADIER = "Limonadier"
+    ALLOTISSEUR = "Allotisseur"
+    APPROVISIONNEUR = "Approvisionneur / Économe"
+    AGENT_SECURITE = "Agent de sécurité"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class Urgent(str, Enum):
+    URGENT = "Urgent"
+    NON_URGENT = "Non Urgent"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+class Environnement(str, Enum):
+    CENTRE_VILLE = "Centre ville"
+    BORD_MER = "Bord de mer"
+    MONTAGNE = "Montagne"
+    BANLIEUE = "Banlieue"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class ChaineIndependant(str, Enum):
+    CHAINE = "Chaine"
+    INDEPENDANT = "Indépendant"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class TempsTravail(str, Enum):
+    PLEIN_TEMPS = "Plein temps"
+    TEMPS_PARTIEL = "Temps partiel"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class HorairesTravail(str, Enum):
+    JOUR = "Jour"
+    NUIT = "Nuit"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class Experience(str, Enum):
+    DEBUTANT = "Débutant"
+    CONFIRME = "Confirmé"
+    VIDE = ""
+    NON_SPECIFIE = "Non spécifié"
+
+
+class DureeModel(BaseModel):
+    value: str
+
+
+class HeuresParSemaineModel(BaseModel):
+    heures: Optional[int] = None
+
+    # v2 field validator
+    @field_validator("heures", mode="before")
+    def parse_heures(cls, v):
+        if isinstance(v, int):
+            return v
+        if isinstance(v, str):
+            match = re.search(r"\d+", v)
+            if match:
+                return int(match.group())
+        return None
+
+class DateDebutModel(BaseModel):
+    value: str
+
+class SalaireModel(BaseModel):
+    value: str
+
+# --- Base model that ties everything together ---
+class JobClassification(BaseModel):
+    IA_Logé: Loge
+    IA_Type_de_contrat: TypeContrat
+    IA_Salaire: SalaireModel
+    IA_Couple_accepté: CoupleAccepte
+    IA_Catégorie_établissement: CategorieEtablissement
+    IA_Catégorie_Job_1: CategorieJob1
+    IA_Catégorie_Job_2: CategorieJob2
+    IA_Catégorie_Job_3: CategorieJob3
+    IA_Urgent: Urgent
+    IA_Date_de_début: DateDebutModel
+    IA_Durée: DureeModel
+    IA_Type_environnement: Environnement
+    IA_Chaine_Indépendant: ChaineIndependant
+    IA_Temps_de_travail: TempsTravail
+    IA_Horaires_de_travail: HorairesTravail
+    IA_Heures_par_semaine: HeuresParSemaineModel
+    IA_Éxpérience: Experience
+
+SYSTEM_PROMPT = """You are a classifier for job listings in the hospitality industry in France. You are an expert and absolutely have to respect the 
+instructions. Each category can ONLY take one the value that are specified for it.
+The success of my business depends on you so double check!!
+    "IA_Logé": when accomodation or help with accomodation is provided "Logé" else "Non logé",
+        "IA_Type_de_contrat": it MUST BE one of ["CDD", "CDI", "Stage", "Apprentissage", "Interim", "Extra", "Saisonnier", "Alternance"],
+        "IA_Salaire": the highest salary offered in format "X€/heure" or "X€/mois" or "X€/an", or "" if not specified,
+        "IA_Couple_accepté": "Couple accepté" or "",
+    	"IA_Catégorie_établissement": it MUST BE one of the following and CANNOT be empty ["Gastronomique","Brasserie","Bar","Restauration rapide","Restauration collective","Restaurant","Hôtel luxe","Hôtel","Camping","Café/Salon de thé”,”Boulangerie/Patisserie”,”Etoile Michelin","Palace”, “Traiteur/Événementiel/Banquet”,“Spa”, “Laboratoire”],
+    	"IA_Catégorie_Job_1":  it MUST BE one of the following and it cannot be empty [“Restauration”, “Hôtellerie”],
+    	“IA_Catégorie_Job_2”:  it MUST BE one of and the most relevant, it cannot be empty [“Salle & Service”, “Direction & Management”, “Support & Back-office”, “Cuisine”, “Spa & Bien-être”, “Étages & Housekeeping”, “Bar & Sommellerie”, “Réception & Hébergement”],
+        “IA_Catégorie_Job_3”: it has to be one of the following and the most relevant, it cannot be empty ["Chef exécutif","Chef de cuisine","Sous-chef","Chef de partie","Commis de cuisine","Pâtissier","Boulanger","Pizzaiolo","Traiteur","Manager / Responsable","Employé polyvalent","Plongeur","Steward","Directeur","Responsable de salle","Maître d’hôtel","Chef de rang","Commis de salle / Runner","Serveur","Sommelier","Barman","Barista","Réceptionniste / Hôte d’accueil","Concierge","Bagagiste / Voiturier","Valet / Femme de chambre","Marketing / Communication","Agent de réservations","Revenue manager","Gouvernant(e)","Spa praticien(ne) / Ésthéticien(ne)","Coach sportif","Maître-nageur","Animation / Événementiel","Commercial","RH / Paie","Comptabilité / Contrôle de gestion","Technicien / Maintenance","IT / Data","HACCP manager","Cuisinier","Limonadier","Allotisseur","Approvisionneur / Économe","Agent de sécurité"],
+    	"IA_Urgent": "Urgent" or "", it takes "Urgent" only when the starting date is within 2 weeks of the date_scraping or when it is explicitly mentioned in the description
+        "IA_Date_de_début": starting date in format YYYY-MM-DD if present, else "",
+        "IA_Durée": contract duration like "N days", "N weeks", "N months", or "Indéfini",
+        "IA_Type_environnement”: one of ["Centre ville","Bord de mer","Montagne","Banlieue"],
+    	“IA_Chaine_Indépendant”: when the company posting the job listing is part of a group or bigger company "Chaine", else ""
+        "IA_Temps_de_travail": "Plein temps" or "Temps partiel",
+        "IA_Horaires_de_travail": "Jour" or "Nuit",
+        "IA_Heures_par_semaine": return a number not a string ! the number of hours worked per week if available, when the contract is less than a week just put how many hours it , else “”,
+    	“IA_Éxpérience” one the following [“Débutant”, “Confirmé”]
+
+    Strictly output without explanations."""
+
+
+def classify_job_listing(ticket_text: str) -> JobClassification:
+    response = client_ai.chat.completions.create(
+            model="gpt-4o-mini",
+            max_retries=3,
+            response_model=JobClassification,
+            messages=[
+                {"role": "system", "content": SYSTEM_PROMPT},
+                {"role": "user", "content": ticket_text}
+            ],
+            temperature=0
+        )
+    return response
+
+# Convert each row into a single string with "col":"value" format
+new_data["row_as_string"] = new_data.apply(
+    lambda row: ", ".join([f'"{col}":"{row[col]}"' for col in new_data.columns]),
+    axis=1
+)
+
+# Apply your classify_job_listing function to each row
+result = new_data["row_as_string"].apply(classify_job_listing)
+
+# If you want, convert the results (list of dicts) into a DataFrame
+classified_df = pd.DataFrame(result.tolist())
+
+base_model_columns = list(JobClassification.model_fields.keys())
+
+def get_value(cell, column_name=None):
+    if isinstance(cell, tuple) and len(cell) == 2:
+        val = cell[1]
+
+        # Special case for IA_Heures_par_semaine
+        if column_name == "IA_Heures_par_semaine" and hasattr(val, "heures"):
+            return val.heures  # directly the int
+
+        # Other enums / objects
+        if hasattr(val, "value"):
+            return val.value
+        return str(val)
+    elif hasattr(cell, "value"):
+        return cell.value
+    return str(cell)
+
+classified_df = pd.DataFrame([
+    [get_value(cell, col) for cell, col in zip(row, base_model_columns)]
+    for row in classified_df.values
+], columns=base_model_columns)
+
+new_data = new_data.drop(columns=["row_as_string"])
+
+# -------- FIN CHATGPT DATA ENRICHMENT ----------------------------------------------------------------------------------------------
+
+# Merge with original sample
+new_data = pd.concat([new_data.reset_index(drop=True), classified_df], axis=1)
+
 # combine new and existing data, reorder columns in new data if necessary, add new columns if necessary
 if not existing_data.empty:
     # Get the column order from existing_data
@@ -235,6 +529,18 @@ if not existing_data.empty:
     combined_data = pd.concat([new_aligned, existing_aligned], ignore_index=True).drop_duplicates(subset=['origineOffre.urlOrigine'], keep='first')
 else:
     combined_data = new_data.copy()
+
+# -------- DEBUT DATA VALIDATION EMPTY VALUES OPENAI ----------------------------------------------------------------------------------------------
+
+# Select columns starting with "IA_"
+ia_cols = [col for col in combined_data.columns if col.startswith("IA_")]
+
+# Replace "" with "Non spécifié" in those columns only
+combined_data[ia_cols] = combined_data[ia_cols].replace("", "Non spécifié")
+
+combined_data["IA_Catégorie_Job_1"] = combined_data["IA_Catégorie_Job_1"].replace("Support & Back-office","Non spécifié")
+
+# -------- FIN DATA VALIDATION EMPTY VALUES OPENAI ----------------------------------------------------------------------------------------------
 
 
 # Debug: Print the number of rows to append
