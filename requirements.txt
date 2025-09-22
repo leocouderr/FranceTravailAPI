@@ -6,3 +6,6 @@ numpy
 httpx
 nest_asyncio
 asyncio
+openai
+instructor
+pydantic
