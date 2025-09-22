@@ -34,4 +34,5 @@ jobs:
     - name: Run script
       env:
         GOOGLE_CREDENTIALS: ${{ secrets.GOOGLE_CREDENTIALS }}
+        OPENAI_API_KEY: ${{ secrets.OPENAI_API_KEY }}
       run: python main.py
