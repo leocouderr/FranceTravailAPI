@@ -470,11 +470,35 @@ def classify_job_listing(ticket_text: str) -> JobClassification:
         )
     return response
 
-# Convert each row into a single string with "col":"value" format
+# Define the columns you want to include
+cols_to_join = [
+    "intitule",
+    "description",
+    "dateCreation",
+    "typeContrat",
+    "experienceLibelle",
+    "dureeTravailLibelle",
+    "dureeTravailLibelleConverti",
+    "secteurActiviteLibelle",
+    "salaire.libelle",
+    "Ville",
+    "Code Postal",
+    "Longitude",
+    "Latitude",
+    "Region"
+]
+
+# Keep only the columns that exist in your DataFrame (to avoid KeyErrors)
+cols_to_join = [col for col in cols_to_join if col in new_data.columns]
+
+# Build the string only for those columns
 new_data["row_as_string"] = new_data.apply(
-    lambda row: ", ".join([f'"{col}":"{row[col]}"' for col in new_data.columns]),
+    lambda row: ", ".join(
+        [f'"{col}":"{row[col]}"' for col in cols_to_join if pd.notnull(row[col])]
+    ),
     axis=1
 )
+
 
 # Apply your classify_job_listing function to each row
 result = new_data["row_as_string"].apply(classify_job_listing)
