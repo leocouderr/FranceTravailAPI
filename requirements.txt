@@ -9,3 +9,4 @@ asyncio
 openai
 instructor
 pydantic
+tqdm
