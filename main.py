@@ -761,26 +761,58 @@ print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
 print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
 print(f"Check date after column mapping: {combined_data.id.head()}")
 
-MAX_RETRIES = 5  # Number of times to retry
-RETRY_DELAY = 30  # Seconds to wait before retrying
-
-def safe_update(worksheet, data):
-    for attempt in range(MAX_RETRIES):
-        try:
-            worksheet.update(data)
-            print("Google Sheets update successful!")
-            return
-        except APIError as e:
-            print(f"Error: {e}. Retrying in {RETRY_DELAY} seconds...")
-            time.sleep(RETRY_DELAY)
-    print("Max retries reached. Update failed.")
-
-# Convert your DataFrame to a list and update the sheet safely
-data_to_upload = [combined_data.columns.tolist()] + combined_data.values.tolist()
-safe_update(worksheet, data_to_upload)
 
 # Update Google Sheets with the combined data
 #worksheet.clear()  # Clear existing content
 #worksheet.update([combined_data.columns.tolist()] + combined_data.values.tolist())
 
-print("New rows successfully appended to Google Sheets without duplicates!")
+# ==========================================
+# 🚀 BATCH SEND TO GOOGLE SHEETS (500 rows)
+# ==========================================
+
+def number_to_column(n):
+    """Convert 1 → A, 2 → B, ..., 27 → AA."""
+    result = ""
+    while n > 0:
+        n, remainder = divmod(n - 1, 26)
+        result = chr(65 + remainder) + result
+    return result
+
+def update_sheet_in_batches(worksheet, df, batch_size=500):
+    df = df.astype(str)
+    values = [df.columns.tolist()] + df.values.tolist()
+    total_rows = len(values)
+
+    print(f"Uploading {total_rows} rows to Google Sheets (batches of {batch_size})...")
+
+    worksheet.clear()
+
+    num_cols = df.shape[1]
+    last_col_letter = number_to_column(num_cols)
+
+    for start in range(0, total_rows, batch_size):
+        end = min(start + batch_size, total_rows)
+        batch = values[start:end]
+
+        start_row = start + 1
+        end_row = start_row + len(batch) - 1
+
+        range_name = f"A{start_row}:{last_col_letter}{end_row}"
+
+        print(f" → Updating rows {start_row} to {end_row} into {range_name}")
+
+        for attempt in range(5):
+            try:
+                worksheet.update(range_name, batch)
+                break
+            except Exception as e:
+                print(f"   !!! Error attempt {attempt+1}: {e}")
+                time.sleep(2 ** attempt)
+        else:
+            raise Exception("Failed after multiple retry attempts")
+
+    print("✓ Sheets updated successfully in batches.")
+
+
+# Run batch update
+update_sheet_in_batches(worksheet, combined_data)
