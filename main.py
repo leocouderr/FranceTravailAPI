@@ -685,15 +685,11 @@ new_data = new_data[
     ~new_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", case=False, na=False)
 ]
 
-#check after Mesure POEI
-print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
-print(f"Check date after column mapping: {combined_data.id.head()}")
-
 #check urls partenaire
 #print(f"check urls partenaire: {new_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 # Replace NaN and infinite values with None (which converts to null in JSON)
-combined_data = new_data.replace([np.nan, np.inf, -np.inf], None)
+new_data = new_data.replace([np.nan, np.inf, -np.inf], None)
 
 #check before titre sans accent
 print(f"Check date after column mapping: {new_data.dateCreation.head()}")
