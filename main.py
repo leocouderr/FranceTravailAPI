@@ -145,7 +145,7 @@ print(f"Loaded {len(existing_urls)} URLs from BigQuery")
 before_count = len(combined_df)
 
 combined_df = combined_df[
-    ~combined_df["origineOffre_urlOrigine"].isin(existing_urls)
+    ~combined_df["origineOffre.urlOrigine"].isin(existing_urls)
 ].copy()
 
 after_count = len(combined_df)
@@ -791,6 +791,9 @@ print(f"Check date after column mapping: {new_data.id.head()}")
 
 
 #---------UPLOAD TO BIGQUERY-------------------------------------------------------------------------------------------------------------
+#Only pour france Travail
+new_data = new_data.rename(columns=lambda c: c.replace(".", "_"))
+
 
 from google.cloud import bigquery
 from google.oauth2 import service_account
