@@ -252,7 +252,7 @@ new_data[["Ville", "Code Postal", "Longitude", "Latitude", "Region"]] = pd.DataF
 new_data["Source"] = "France Travail"
 
 # Remove rows that already exist in existing_data to save computational time
-new_data = new_data[~new_data["origineOffre.urlOrigine"].isin(existing_data["origineOffre.urlOrigine"])]
+#new_data = new_data[~new_data["origineOffre.urlOrigine"].isin(existing_data["origineOffre.urlOrigine"])]
 
 # -------- DEBUT CHATGPT DATA ENRICHMENT --------------------------------------------------------------------------------------------
 
