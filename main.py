@@ -110,24 +110,52 @@ print(f"Total job listings fetched: {combined_df.shape[0]}")
 print(combined_df.dateCreation.head())
 print(combined_df.id.head())
 
-# Google Sheets API setup
-scope = ["https://spreadsheets.google.com/feeds", 'https://www.googleapis.com/auth/spreadsheets',
-         "https://www.googleapis.com/auth/drive.file", "https://www.googleapis.com/auth/drive"]
+#------------------------CHECK DUPLICATES URL DANS BIGQUERY--------------------------------------------------
 
-credentials_info = json.loads(os.environ.get("GOOGLE_CREDENTIALS"))
-credentials = ServiceAccountCredentials.from_json_keyfile_dict(credentials_info, scope)
-client = gspread.authorize(credentials)
+from google.cloud import bigquery
+import pandas as pd
+from google.oauth2 import service_account
 
-# Open the Google Sheet
-spreadsheet = client.open('FranceTravailListings')  # Use your sheet's name
-worksheet = spreadsheet.sheet1
 
-# Read existing data from Google Sheets into a DataFrame
-existing_data = pd.DataFrame(worksheet.get_all_records())
+# Load JSON from GitHub secret
+key_json = json.loads(os.environ["BIGQUERY"])
 
-# Debug: Print the number of rows from get_all_records in existing google sheets
-existing_rows_in_google_sheets = existing_data.shape[0]
-print(f"Existing rows in google sheets: {existing_rows_in_google_sheets}")
+# Create credentials from dict
+credentials = service_account.Credentials.from_service_account_info(key_json)
+
+# Initialize BigQuery client
+client = bigquery.Client(
+    credentials=credentials,
+    project=key_json["project_id"]
+)
+
+# Query existing URLs from your BigQuery table
+query = """
+    SELECT origineOffre_urlOrigine
+    FROM `databasealfred.jobListings.franceTravail`
+    WHERE origineOffre_urlOrigine IS NOT NULL
+"""
+query_job = client.query(query)
+
+# Convert results to a set for fast lookup
+existing_urls = {row.origineOffre_urlOrigine for row in query_job}
+
+print(f"Loaded {len(existing_urls)} URLs from BigQuery")
+
+before_count = len(combined_df)
+
+combined_df = combined_df[
+    ~combined_df["origineOffre_urlOrigine"].isin(existing_urls)
+].copy()
+
+after_count = len(combined_df)
+
+print(f"🧹 Removed {before_count - after_count} duplicate URLs")
+print(f"✅ Remaining new job listings: {after_count}")
+
+#------------------------ FIN CHECK DUPLICATES URL DANS BIGQUERY--------------------------------------------------
+
+
 
 # Convert scraped results into a DataFrame
 new_data = combined_df
@@ -595,54 +623,54 @@ new_data.drop(columns=["combined_text"], inplace=True)
 
 
 # combine new and existing data, reorder columns in new data if necessary, add new columns if necessary
-if not existing_data.empty:
-    # Get the column order from existing_data
-    existing_cols = list(existing_data.columns)
-    # Find extra columns in new_data that aren't in existing_data
-    extra_cols = [col for col in new_data.columns if col not in existing_cols]
-    # The final union of columns: existing order followed by extra columns
-    union_cols = existing_cols + extra_cols
+#if not existing_data.empty:
+#    # Get the column order from existing_data
+#    existing_cols = list(existing_data.columns)
+#    # Find extra columns in new_data that aren't in existing_data
+#    extra_cols = [col for col in new_data.columns if col not in existing_cols]
+#    # The final union of columns: existing order followed by extra columns
+#    union_cols = existing_cols + extra_cols
 
     # Reindex both DataFrames using the union of columns
-    existing_aligned = existing_data.reindex(columns=union_cols)
-    new_aligned = new_data.reindex(columns=union_cols)
+#    existing_aligned = existing_data.reindex(columns=union_cols)
+#    new_aligned = new_data.reindex(columns=union_cols)
 
     # Concatenate the aligned DataFrames and remove duplicates based on 'id'
-    combined_data = pd.concat([new_aligned, existing_aligned], ignore_index=True).drop_duplicates(subset=['origineOffre.urlOrigine'], keep='first')
-else:
-    combined_data = new_data.copy()
+#    combined_data = pd.concat([new_aligned, existing_aligned], ignore_index=True).drop_duplicates(subset=['origineOffre.urlOrigine'], keep='first')
+#else:
+#    combined_data = new_data.copy()
 
 # -------- DEBUT DATA VALIDATION EMPTY VALUES OPENAI ----------------------------------------------------------------------------------------------
 
 # Select columns starting with "IA_"
-ia_cols = [col for col in combined_data.columns if col.startswith("IA_")]
+ia_cols = [col for col in new_data.columns if col.startswith("IA_")]
 
 # Replace "" with "Non spécifié" in those columns only
-combined_data[ia_cols] = combined_data[ia_cols].replace("", "Non spécifié")
+new_data[ia_cols] = new_data[ia_cols].replace("", "Non spécifié")
 
-combined_data["IA_Catégorie_Job_1"] = combined_data["IA_Catégorie_Job_1"].replace("Support & Back-office","Non spécifié")
+new_data["IA_Catégorie_Job_1"] = new_data["IA_Catégorie_Job_1"].replace("Support & Back-office","Non spécifié")
 
 # -------- FIN DATA VALIDATION EMPTY VALUES OPENAI ----------------------------------------------------------------------------------------------
 
 
 # Debug: Print the number of rows to append
-rows_to_append = combined_data.shape[0]
+rows_to_append = new_data.shape[0]
 print(f"Rows to append before filtering: {rows_to_append}")
-print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
-print(f"Check date after column mapping: {combined_data.id.head()}")
+print(f"Check date after column mapping: {new_data.dateCreation.head()}")
+print(f"Check date after column mapping: {new_data.id.head()}")
 #check urls partenaire
-#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
+#print(f"check urls partenaire: {new_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 
 # Handle NaN, infinity values before sending to Google Sheets
 # Replace NaN values with 0 or another placeholder (you can customize this)
-combined_data = combined_data.fillna(0)
+new_data = new_data.fillna(0)
 
 # Replace infinite values with 0 or another placeholder
-combined_data.replace([float('inf'), float('-inf')], 0, inplace=True)
+new_data.replace([float('inf'), float('-inf')], 0, inplace=True)
 
 # Optional: Ensure all float types are valid (e.g., replace any invalid float with 0)
-combined_data = combined_data.applymap(lambda x: 0 if isinstance(x, float) and (x == float('inf') or x == float('-inf') or x != x) else x)
+new_data = new_data.applymap(lambda x: 0 if isinstance(x, float) and (x == float('inf') or x == float('-inf') or x != x) else x)
 
 # Optional: Ensuring no invalid values (like lists or dicts) in any column
 def clean_value(value):
@@ -650,11 +678,11 @@ def clean_value(value):
         return str(value)  # Convert lists or dicts to string
     return value
 
-combined_data = combined_data.applymap(clean_value)
+new_data = new_data.applymap(clean_value)
 
 #Remove rows with Mesure POEI and Consultant as Intitulé
-combined_data = combined_data[
-    ~combined_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", case=False, na=False)
+new_data = new_data[
+    ~new_data["intitule"].str.contains("Mesure POEI|Consultant Freelance Expert en Hôtellerie et Restauration", case=False, na=False)
 ]
 
 #check after Mesure POEI
@@ -662,14 +690,14 @@ print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
 print(f"Check date after column mapping: {combined_data.id.head()}")
 
 #check urls partenaire
-#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
+#print(f"check urls partenaire: {new_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 # Replace NaN and infinite values with None (which converts to null in JSON)
-combined_data = combined_data.replace([np.nan, np.inf, -np.inf], None)
+combined_data = new_data.replace([np.nan, np.inf, -np.inf], None)
 
 #check before titre sans accent
-print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
-print(f"Check date after column mapping: {combined_data.id.head()}")
+print(f"Check date after column mapping: {new_data.dateCreation.head()}")
+print(f"Check date after column mapping: {new_data.id.head()}")
 
 #add column titre de annonce sans accents ni special characters
 def remove_accents_and_special(text):
@@ -684,16 +712,16 @@ def remove_accents_and_special(text):
     return cleaned
 
 # Create the new column "Titre annonce sans accent" by applying the function on "intitule".
-combined_data["TitreAnnonceSansAccents"] = combined_data["intitule"].apply(
+new_data["TitreAnnonceSansAccents"] = new_data["intitule"].apply(
     lambda x: remove_accents_and_special(x) if isinstance(x, str) else x
 )
 
 #check after titre sans accent
-print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
-print(f"Check date after column mapping: {combined_data.id.head()}")
+print(f"Check date after column mapping: {new_data.dateCreation.head()}")
+print(f"Check date after column mapping: {new_data.id.head()}")
 
 #check urls partenaire
-#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
+#print(f"check urls partenaire: {new_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 #filter out listings from indeed to avoid duplicates and only keep the url in the json value
 def process_partenaire(cell):
@@ -720,17 +748,17 @@ def process_partenaire(cell):
     return cell[0].get('url', '')
 
 # Apply the function to the 'origineOffre.partenaires' column.
-combined_data["origineOffre.partenaires"] = combined_data["origineOffre.partenaires"].apply(process_partenaire)
+new_data["origineOffre.partenaires"] = new_data["origineOffre.partenaires"].apply(process_partenaire)
 
 #check urls partenaire
-#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
+#print(f"check urls partenaire: {new_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 #check after indeed filtering
-print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
-print(f"Check date after column mapping: {combined_data.id.head()}")
+print(f"Check date after column mapping: {new_data.dateCreation.head()}")
+print(f"Check date after column mapping: {new_data.id.head()}")
 
 # For rows where the processed value is NaN, None, or an empty string, substitute the fallback from 'origineOffre.urlOrigine'.
-combined_data["origineOffre.partenaires"] = combined_data.apply(
+new_data["origineOffre.partenaires"] = new_data.apply(
     lambda row: row["origineOffre.partenaires"]
     if pd.notna(row["origineOffre.partenaires"]) and row["origineOffre.partenaires"] not in [None, '',0,"O"]
     else row["origineOffre.urlOrigine"],
@@ -738,7 +766,7 @@ combined_data["origineOffre.partenaires"] = combined_data.apply(
 )
 
 #check urls partenaire
-#print(f"check urls partenaire: {combined_data[\'origineOffre.urlOrigine\'].head(15)}")
+#print(f"check urls partenaire: {new_data[\'origineOffre.urlOrigine\'].head(15)}")
 
 #last check for out of range json float and convert to json compliant None
 def safe_json_value(x):
@@ -748,71 +776,55 @@ def safe_json_value(x):
             return None
     return x
 
-combined_data = combined_data.applymap(safe_json_value)
+new_data = new_data.applymap(safe_json_value)
 
 #last check to remove duplicates based on ID
 # Normalize the 'id' column: convert everything to string and remove surrounding whitespace
-#combined_data['id'] = combined_data['id'].astype(str).str.strip()
-#combined_data = combined_data.drop_duplicates(subset=['origineOffre.urlOrigine'], keep='first')
+#new_data['id'] = new_data['id'].astype(str).str.strip()
+#new_data = new_data.drop_duplicates(subset=['origineOffre.urlOrigine'], keep='first')
 
 # Debug: Print the number of rows to append after filtering
-rows_to_append_after_filtering = combined_data.shape[0]
+rows_to_append_after_filtering = new_data.shape[0]
 print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
-print(f"Check date after column mapping: {combined_data.dateCreation.head()}")
-print(f"Check date after column mapping: {combined_data.id.head()}")
+print(f"Check date after column mapping: {new_data.dateCreation.head()}")
+print(f"Check date after column mapping: {new_data.id.head()}")
 
 
-# Update Google Sheets with the combined data
-#worksheet.clear()  # Clear existing content
-#worksheet.update([combined_data.columns.tolist()] + combined_data.values.tolist())
+#---------UPLOAD TO BIGQUERY-------------------------------------------------------------------------------------------------------------
 
-# ==========================================
-# 🚀 BATCH SEND TO GOOGLE SHEETS (500 rows)
-# ==========================================
+from google.cloud import bigquery
+from google.oauth2 import service_account
 
-def number_to_column(n):
-    """Convert 1 → A, 2 → B, ..., 27 → AA."""
-    result = ""
-    while n > 0:
-        n, remainder = divmod(n - 1, 26)
-        result = chr(65 + remainder) + result
-    return result
+# Load JSON from GitHub secret
+key_json = json.loads(os.environ["BIGQUERY"])
 
-def update_sheet_in_batches(worksheet, df, batch_size=500):
-    df = df.astype(str)
-    values = [df.columns.tolist()] + df.values.tolist()
-    total_rows = len(values)
+# Create credentials from dict
+credentials = service_account.Credentials.from_service_account_info(key_json)
 
-    print(f"Uploading {total_rows} rows to Google Sheets (batches of {batch_size})...")
+# Initialize BigQuery client
+client = bigquery.Client(
+    credentials=credentials,
+    project=key_json["project_id"]
+)
 
-    worksheet.clear()
+table_id = "databasealfred.jobListings.hellowork"
 
-    num_cols = df.shape[1]
-    last_col_letter = number_to_column(num_cols)
+# CONFIG WITHOUT PYARROW
+job_config = bigquery.LoadJobConfig(
+    write_disposition="WRITE_APPEND",
+    source_format=bigquery.SourceFormat.NEWLINE_DELIMITED_JSON,
+)
 
-    for start in range(0, total_rows, batch_size):
-        end = min(start + batch_size, total_rows)
-        batch = values[start:end]
+# Convert DataFrame → list of dict rows (JSON compatible)
+rows = new_data.to_dict(orient="records")
 
-        start_row = start + 1
-        end_row = start_row + len(batch) - 1
+# Upload
+job = client.load_table_from_json(
+    rows,
+    table_id,
+    job_config=job_config
+)
 
-        range_name = f"A{start_row}:{last_col_letter}{end_row}"
+job.result()
 
-        print(f" → Updating rows {start_row} to {end_row} into {range_name}")
-
-        for attempt in range(5):
-            try:
-                worksheet.update(range_name, batch)
-                break
-            except Exception as e:
-                print(f"   !!! Error attempt {attempt+1}: {e}")
-                time.sleep(2 ** attempt)
-        else:
-            raise Exception("Failed after multiple retry attempts")
-
-    print("✓ Sheets updated successfully in batches.")
-
-
-# Run batch update
-update_sheet_in_batches(worksheet, combined_data)
+print("✅ Data successfully loaded into BigQuery (JSON mode, no PyArrow needed)")
