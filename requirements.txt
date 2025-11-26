@@ -10,3 +10,9 @@ openai
 instructor
 pydantic
 tqdm
+bigquery
+google-cloud-bigquery
+google-auth
+google-auth-oauthlib
+google-auth-httplib2
+pyarrow
