@@ -773,7 +773,7 @@ new_data = new_data.applymap(safe_json_value)
 #new_data = new_data.drop_duplicates(subset=['origineOffre.urlOrigine'], keep='first')
 
 # Debug: Print the number of rows to append after filtering
-rint(f"Total job listings fetched: {new_data.shape[0]}")
+print(f"Total job listings fetched: {new_data.shape[0]}")
 print(f"Total columns fetched: {new_data.shape[1]}")
 print(new_data.head(5))
 
