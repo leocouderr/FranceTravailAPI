@@ -105,10 +105,9 @@ combined_df = combined_df.reset_index(drop=True)
 
 # Debug: Print the total number of rows
 print(f"Total job listings fetched: {combined_df.shape[0]}")
+print(f"Total columns fetched: {combined_df.shape[1]}")
+print(combined_df.head(5))
 
-#5 listings les plus récents
-print(combined_df.dateCreation.head())
-print(combined_df.id.head())
 
 #------------------------CHECK DUPLICATES URL DANS BIGQUERY--------------------------------------------------
 
@@ -155,17 +154,11 @@ print(f"✅ Remaining new job listings: {after_count}")
 
 #------------------------ FIN CHECK DUPLICATES URL DANS BIGQUERY--------------------------------------------------
 
-
-
 # Convert scraped results into a DataFrame
 new_data = combined_df
-print(f"Head nouvelles annonces: {new_data.head()}")
-#check urls partenaire
-#print(f"check urls partenaire: {combined_df['origineOffre.urlOrigine'].head(15)}")
 
 #make dateCreation a date dtype
 new_data["dateCreation"] = pd.to_datetime(new_data["dateCreation"], format="%Y-%m-%dT%H:%M:%S.%fZ", errors="ignore").dt.strftime("%Y-%m-%d")
-print(f"Check Rows date after modifiying date column: {new_data.dateCreation.head()}")
 
 # Ensure 'lieuTravail.codePostal' is a string
 new_data["lieuTravail.codePostal"] = new_data["lieuTravail.codePostal"].astype(str)
@@ -780,16 +773,47 @@ new_data = new_data.applymap(safe_json_value)
 #new_data = new_data.drop_duplicates(subset=['origineOffre.urlOrigine'], keep='first')
 
 # Debug: Print the number of rows to append after filtering
-rows_to_append_after_filtering = new_data.shape[0]
-print(f"Rows to append after filtering: {rows_to_append_after_filtering}")
-print(f"Check date after column mapping: {new_data.dateCreation.head()}")
-print(f"Check date after column mapping: {new_data.id.head()}")
+rint(f"Total job listings fetched: {new_data.shape[0]}")
+print(f"Total columns fetched: {new_data.shape[1]}")
+print(new_data.head(5))
 
-
-#---------UPLOAD TO BIGQUERY-------------------------------------------------------------------------------------------------------------
+#-------------ORDER COLUMNS AND ADD IF NEEDED TO MATCH DESTINATION AND SOURCE-------------------------
 #Only pour france Travail
 new_data = new_data.rename(columns=lambda c: c.replace(".", "_"))
 
+# Initialize BigQuery client
+client = bigquery.Client(
+    credentials=credentials,
+    project=key_json["project_id"]
+)
+
+# Query existing URLs from your BigQuery table
+query = """
+    SELECT *
+    FROM `databasealfred.jobListings.franceTravail`
+    LIMIT 2
+"""
+query_job = client.query(query)
+
+# Convert BigQuery result to DataFrame
+sample_data = query_job.to_dataframe()
+
+# List of columns from sample_data (your reference schema)
+reference_cols = list(sample_data.columns)
+
+# 1. Drop any extra columns in new_data
+new_data = new_data[[col for col in new_data.columns if col in reference_cols]]
+
+# 2. Add missing columns that exist in sample_data but not in new_data
+for col in reference_cols:
+    if col not in new_data.columns:
+        new_data[col] = None
+
+# 3. Reorder columns to match sample_data exactly
+new_data = new_data[reference_cols]
+
+
+#---------UPLOAD TO BIGQUERY-------------------------------------------------------------------------------------------------------------
 
 from google.cloud import bigquery
 from google.oauth2 import service_account
