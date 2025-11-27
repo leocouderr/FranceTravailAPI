@@ -825,7 +825,7 @@ client = bigquery.Client(
     project=key_json["project_id"]
 )
 
-table_id = "databasealfred.jobListings.hellowork"
+table_id = "databasealfred.jobListings.franceTravail"
 
 # CONFIG WITHOUT PYARROW
 job_config = bigquery.LoadJobConfig(
