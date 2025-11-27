@@ -795,7 +795,7 @@ new_data = new_data.loc[:, new_data.columns.isin(reference_cols)]
 # 2 — Add missing columns
 for col in reference_cols:
     if col not in new_data.columns:
-        new_data[col] = None
+        new_data[col] = 0
 
 # 3 — Reorder
 new_data = new_data[reference_cols]
