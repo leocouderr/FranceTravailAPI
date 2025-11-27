@@ -779,7 +779,7 @@ print(f"Total columns fetched: {new_data.shape[1]}")
 print(new_data.head(5))
 
 #-------------ORDER COLUMNS AND ADD IF NEEDED TO MATCH DESTINATION AND SOURCE-------------------------
-#Only pour france Travail
+# Only pour france Travail
 new_data = new_data.rename(columns=lambda c: c.replace(".", "_"))
 
 # Initialize BigQuery client
@@ -788,30 +788,25 @@ client = bigquery.Client(
     project=key_json["project_id"]
 )
 
-# Query existing URLs from your BigQuery table
-query = """
-    SELECT *
-    FROM `databasealfred.jobListings.franceTravail`
-    LIMIT 2
-"""
-query_job = client.query(query)
+# --- FIX: Get schema from BigQuery metadata instead of using LIMIT 2 ---
+table = client.get_table("databasealfred.jobListings.franceTravail")
+reference_cols = [field.name for field in table.schema]
 
-# Convert BigQuery result to DataFrame
-sample_data = query_job.to_dataframe()
+print(f"📌 BigQuery schema contains {len(reference_cols)} columns")
 
-# List of columns from sample_data (your reference schema)
-reference_cols = list(sample_data.columns)
-
-# 1. Drop any extra columns in new_data
+# --- 1. Drop columns not in BigQuery schema ---
 new_data = new_data[[col for col in new_data.columns if col in reference_cols]]
 
-# 2. Add missing columns that exist in sample_data but not in new_data
+# --- 2. Add missing columns ---
 for col in reference_cols:
     if col not in new_data.columns:
         new_data[col] = None
 
-# 3. Reorder columns to match sample_data exactly
+# --- 3. Reorder to match exact BigQuery order ---
 new_data = new_data[reference_cols]
+
+print(f"🆕 new_data after alignment: {new_data.shape[1]} columns")
+
 
 
 #---------UPLOAD TO BIGQUERY-------------------------------------------------------------------------------------------------------------
