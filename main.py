@@ -779,35 +779,34 @@ print(f"Total columns fetched: {new_data.shape[1]}")
 print(new_data.head(5))
 
 #-------------ORDER COLUMNS AND ADD IF NEEDED TO MATCH DESTINATION AND SOURCE-------------------------
-# Only pour france Travail
+# Cleanup API columns
 new_data = new_data.rename(columns=lambda c: c.replace(".", "_"))
 
-# Initialize BigQuery client
-client = bigquery.Client(
-    credentials=credentials,
-    project=key_json["project_id"]
-)
-
-# --- FIX: Get schema from BigQuery metadata instead of using LIMIT 2 ---
+# Load schema
 table = client.get_table("databasealfred.jobListings.franceTravail")
 reference_cols = [field.name for field in table.schema]
 
-print(f"📌 BigQuery schema contains {len(reference_cols)} columns")
+print("📌 BigQuery schema:", reference_cols)
+print("📌 new_data cols BEFORE alignment:", list(new_data.columns))
 
-# --- 1. Drop columns not in BigQuery schema ---
-new_data = new_data[[col for col in new_data.columns if col in reference_cols]]
+# 1 — Drop columns not in schema
+new_data = new_data.loc[:, new_data.columns.isin(reference_cols)]
 
-# --- 2. Add missing columns ---
+# 2 — Add missing columns
 for col in reference_cols:
     if col not in new_data.columns:
         new_data[col] = None
 
-# --- 3. Reorder to match exact BigQuery order ---
+# 3 — Reorder
 new_data = new_data[reference_cols]
+
+print("📌 new_data cols AFTER alignment:", list(new_data.columns))
 
 print(f"🆕 new_data after alignment: {new_data.shape[1]} columns")
 
 
+print(new_data.columns)
+print(reference_cols)
 
 #---------UPLOAD TO BIGQUERY-------------------------------------------------------------------------------------------------------------
 
