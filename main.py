@@ -804,7 +804,7 @@ print("📌 new_data cols AFTER alignment:", list(new_data.columns))
 
 print(f"🆕 new_data after alignment: {new_data.shape[1]} columns")
 
-print(f"🆕 reference_cols: {list(reference_cols.columns)}")
+#print(f"🆕 reference_cols: {list(reference_cols.columns)}")
 
 print(new_data.head(5))
 
