@@ -49,12 +49,7 @@ def fetch_all_offers(token, base_search_params=None):
     }
 
     # Ranges: 8 pages of 150 items each = 1200 max
-    ranges = [
-        (0, 149) 
-        #,(150, 299), (300, 449),
-        #(450, 599), (600, 749), (750, 899),
-       # (900, 1049), (1050, 1149)
-    ]
+    ranges = [(0, 149),(150, 299), (300, 449),(450, 599), (600, 749), (750, 899), (900, 1049),(1050, 1149)]
 
     all_offers = []
     seen_ids = set()
