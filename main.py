@@ -562,51 +562,52 @@ from tqdm import tqdm
 import time
 
 # --- Function to build a natural-language sentence per row ---
-def build_sentence(row):
-    return (
-        f"Le titre de ce job est {row.get('titre', '')} et est à {row.get('Ville', '')} "
-        f"dans le département {row.get('Code Postal', '')} de la région {row.get('Region', '')}. "
-        f"Ce poste est {row.get('IA_Logé', '')} et le contrat est en {row.get('IA_Type_de_contrat', '')}. "
-        f"Le salaire est de {row.get('IA_Salaire', '')}. Particularité : {row.get('IA_Couple_accepté', '')} "
-        f"et {row.get('IA_Urgent', '')}. Le job est dans un {row.get('IA_Catégorie_établissement', '')} "
-        f"et dans le secteur de {row.get('IA_Catégorie_Job_1', '')}. "
-        f"Détails du job : {row.get('IA_Catégorie_Job_2', '')} {row.get('IA_Catégorie_Job_3', '')}. "
-        f"Il commence le {row.get('IA_Date_de_début', '')} et dure {row.get('IA_Durée', '')}. "
-        f"L'établissement est situé {row.get('IA_Type_environnement', '')} et est {row.get('IA_Chaine_Indépendant', '')}. "
-        f"C'est un contrat à {row.get('IA_Temps_de_travail', '')} et travail de {row.get('IA_Horaires_de_travail', '')} "
-        f"pendant {row.get('IA_Heures_par_semaine', '')} heures par semaine. "
-        f"Le poste est pour les {row.get('IA_Éxpérience', '')}."
-    )
+#def build_sentence(row):
+#    return (
+#        f"Le titre de ce job est {row.get('titre', '')} et est à {row.get('Ville', '')} "
+#        f"dans le département {row.get('Code Postal', '')} de la région {row.get('Region', '')}. "
+#        f"Ce poste est {row.get('IA_Logé', '')} et le contrat est en {row.get('IA_Type_de_contrat', '')}. "
+#        f"Le salaire est de {row.get('IA_Salaire', '')}. Particularité : {row.get('IA_Couple_accepté', '')} "
+#        f"et {row.get('IA_Urgent', '')}. Le job est dans un {row.get('IA_Catégorie_établissement', '')} "
+#        f"et dans le secteur de {row.get('IA_Catégorie_Job_1', '')}. "
+#        f"Détails du job : {row.get('IA_Catégorie_Job_2', '')} {row.get('IA_Catégorie_Job_3', '')}. "
+#        f"Il commence le {row.get('IA_Date_de_début', '')} et dure {row.get('IA_Durée', '')}. "
+#        f"L'établissement est situé {row.get('IA_Type_environnement', '')} et est {row.get('IA_Chaine_Indépendant', '')}. "
+#        f"C'est un contrat à {row.get('IA_Temps_de_travail', '')} et travail de {row.get('IA_Horaires_de_travail', '')} "
+#        f"pendant {row.get('IA_Heures_par_semaine', '')} heures par semaine. "
+#        f"Le poste est pour les {row.get('IA_Éxpérience', '')}."
+#    )
 
 # --- Create the combined natural-language field ---
-new_data["combined_text"] = new_data.apply(build_sentence, axis=1)
+#new_data["combined_text"] = new_data.apply(build_sentence, axis=1)
 
 # --- Define batching function ---
-def embed_in_batches(texts, batch_size=1500):
-    """
-    Embed a list of texts in batches to avoid API rate limits and memory issues.
-    """
-    embeddings = []
-    for i in tqdm(range(0, len(texts), batch_size), desc="Embedding batches"):
-        batch = texts[i:i + batch_size]
-        try:
-            response = client_ai.embeddings.create(
-                model="text-embedding-3-small",
-                input=batch
-            )
-            batch_embeddings = [item.embedding for item in response.data]
-            embeddings.extend(batch_embeddings)
-        except Exception as e:
-            print(f"Error at batch {i}: {e}")
-            time.sleep(5)  # Wait a bit and retry
-            continue
-    return embeddings
+#def embed_in_batches(texts, batch_size=1500):
+#    """
+#    Embed a list of texts in batches to avoid API rate limits and memory issues.
+#    """
+#    embeddings = []
+#    for i in tqdm(range(0, len(texts), batch_size), desc="Embedding batches"):
+#        batch = texts[i:i + batch_size]
+#        try:
+#            response = client_ai.embeddings.create(
+#                model="text-embedding-3-small",
+#                input=batch
+#            )
+#            batch_embeddings = [item.embedding for item in response.data]
+#            embeddings.extend(batch_embeddings)
+#        except Exception as e:
+#            print(f"Error at batch {i}: {e}")
+#            time.sleep(5)  # Wait a bit and retry
+#            continue
+#    return embeddings
 
 # --- Generate embeddings ---
-new_data["OpenAIEmbeddedSmall"] = embed_in_batches(new_data["combined_text"].tolist(), batch_size=1500)
+#new_data["OpenAIEmbeddedSmall"] = embed_in_batches(new_data["combined_text"].tolist(), batch_size=1500)
+new_data["OpenAIEmbeddedSmall"] = ""
 
 # --- Optional: Clean up ---
-new_data.drop(columns=["combined_text"], inplace=True)
+#new_data.drop(columns=["combined_text"], inplace=True)
 
 # -------- FIN EMBEDING OPENAI LARGE ----------------------------------------------------------------------------------------------
 
